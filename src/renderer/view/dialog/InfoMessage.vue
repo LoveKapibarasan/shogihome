@@ -23,6 +23,9 @@
         {{ attachment.text }}
       </button>
     </div>
+    <div v-if="store.message.withCopyButton">
+      <button @click="copyMessage"><Icon :icon="IconType.COPY" />{{ t.copy }}</button>
+    </div>
     <div class="main-buttons">
       <button autofocus data-hotkey="Escape" @click="onClose()">
         {{ t.close }}
@@ -40,6 +43,7 @@ import { IconType } from "@/renderer/assets/icons";
 import { installHotKeyForDialog, uninstallHotKeyForDialog } from "@/renderer/devices/hotkey";
 import { useMessageStore } from "@/renderer/store/message";
 import api from "@/renderer/ipc/api";
+import { toPlainText } from "@/common/message";
 
 const store = useMessageStore();
 const dialog = ref();
@@ -52,6 +56,10 @@ onMounted(() => {
 onBeforeUnmount(() => {
   uninstallHotKeyForDialog(dialog.value);
 });
+
+const copyMessage = () => {
+  navigator.clipboard.writeText(toPlainText(store.message));
+};
 
 const onClose = () => {
   store.dequeue();

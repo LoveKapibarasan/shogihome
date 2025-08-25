@@ -19,7 +19,30 @@ export type Attachment = List | Link;
 export type Message = {
   text: string;
   attachments?: Attachment[];
+  withCopyButton?: boolean;
 };
+
+export function toPlainText(message: Message): string {
+  const lines = [message.text];
+  for (const attachment of message.attachments ?? []) {
+    switch (attachment.type) {
+      case "list":
+        for (const item of attachment.items) {
+          lines.push(`- ${item.text}`);
+          if (item.children) {
+            for (const child of item.children) {
+              lines.push(`  - ${child}`);
+            }
+          }
+        }
+        break;
+      case "link":
+        lines.push(`[${attachment.text}](${attachment.url})`);
+        break;
+    }
+  }
+  return lines.join("\n");
+}
 
 export function createListItems(object: unknown[] | object): ListItem[] {
   if (object instanceof Array) {

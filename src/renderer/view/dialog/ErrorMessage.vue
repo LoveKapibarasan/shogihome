@@ -15,6 +15,9 @@
         </div>
       </div>
     </div>
+    <div>
+      <button @click="copyMessage"><Icon :icon="IconType.COPY" />{{ t.copy }}</button>
+    </div>
     <div class="main-buttons">
       <button autofocus data-hotkey="Escape" @click="onClose()">
         {{ t.close }}
@@ -42,6 +45,12 @@ onMounted(() => {
 onBeforeUnmount(() => {
   uninstallHotKeyForDialog(dialog.value);
 });
+
+const copyMessage = () => {
+  navigator.clipboard.writeText(
+    store.errors.map((e) => (e.count === 1 ? e.message : `${e.message} (${e.count})`)).join("\n"),
+  );
+};
 
 const onClose = () => {
   store.clear();
