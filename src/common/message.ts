@@ -27,6 +27,7 @@ export function toPlainText(message: Message): string {
   for (const attachment of message.attachments ?? []) {
     switch (attachment.type) {
       case "list":
+        lines.push("");
         for (const item of attachment.items) {
           lines.push(`- ${item.text}`);
           if (item.children) {
