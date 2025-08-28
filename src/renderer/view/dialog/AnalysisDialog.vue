@@ -82,11 +82,11 @@
         <button data-hotkey="Escape" @click="onCancel()">
           {{ t.cancel }}
         </button>
-        <button @click="onAnalyzeFolder()">
-          {{ t.analyzeFolder }}
+        <button @click="onSelectFolder()">
+          フォルダ選択
         </button>
-        <button data-hotkey="Escape" @click="onCancel()">
-          {{ t.cancel }}
+        <button @click="onAnalyzeSelectedFolder()">
+          連続解析開始
         </button>
       </div>
     </div>
@@ -155,22 +155,31 @@ const onUpdatePlayerSettings = async (val: USIEngines) => {
   engines.value = val;
 };
 //@LoveKapibarasan
-//+       <button @click="onAnalyzeFolder()">
-//+         {{ t.analyzeFolder }}
-//+       </button>
-const onAnalyzeFolder = async () => {
+// Add 2 buttons
+const selectedDir = ref<string>("");
+
+const onSelectFolder = async () => {
   try {
     const dir = await api.showSelectDirectoryDialog();
-    if (!dir) return;
+    if (dir) {
+      selectedDir.value = dir;
+    }
+  } catch (e) {
+    useErrorStore().add(e);
+  }
+};
+const onAnalyzeSelectedFolder = async () => {
+  try {
+    if (!selectedDir.value) {
+      useErrorStore().add("先にフォルダを選択してください");
+      return;
+    }
 
-    // ディレクトリ内の全ファイルを取得
-    const files = await api.listFiles(dir);
-
-    // 拡張子フィルタリング（簡易）
+    const files = await api.listFiles(selectedDir.value);
     const kifFiles = files.filter((f) => f.toLowerCase().endsWith(".kif"));
 
     for (const path of kifFiles) {
-      // 棋譜を読み込み
+      // 棋譜を開く
       await store.openRecord(path);
 
       const engine = engines.value.getEngine(engineURI.value);
@@ -179,17 +188,29 @@ const onAnalyzeFolder = async () => {
         usi: engine,
       };
 
-      // 解析開始
-      store.startAnalysis(newSettings);
+      // メッセージ抑制
+      store.suppressFinishMessage = true;
 
-      // 保存（上書き）
-      await store.saveRecord({ overwrite: true });
+      // finishをPromise化して待つ
+      await new Promise<void>((resolve, reject) => {
+        store.analysisManager.once("finish", async () => {
+          try {
+            await store.saveRecord({ overwrite: true });
+            resolve(); // 保存終わったら次へ
+          } catch (e) {
+            reject(e);
+          }
+        });
+
+        // 解析開始
+        store.startAnalysis(newSettings);
+      });
     }
-
   } catch (e) {
     useErrorStore().add(e);
   }
 };
+
 //=====
 </script>
 

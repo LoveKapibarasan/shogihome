@@ -40,6 +40,31 @@ export class AnalysisManager {
     }
     return this;
   }
+  //@LoveKapibarasan
+  once(event: "finish", handler: FinishCallback): this;
+  once(event: "error", handler: ErrorCallback): this;
+  once(event: string, handler: unknown): this {
+    switch (event) {
+      case "finish": {
+        const wrapper = () => {
+          this.onFinish = () => {}; // 一回呼んだら消す
+          (handler as FinishCallback)();
+        };
+        this.onFinish = wrapper;
+        break;
+      }
+      case "error": {
+        const wrapper = (e: unknown) => {
+          this.onError = () => {};
+          (handler as ErrorCallback)(e);
+        };
+        this.onError = wrapper;
+        break;
+      }
+    }
+    return this;
+  }
+  //=====
 
   async start(settings: AnalysisSettings): Promise<void> {
     if (!settings.usi) {

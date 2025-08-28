@@ -41,6 +41,10 @@ main → preload → bridge(export) → renderer(api.ts) → 呼び出し側(Vue
 * `src/renderer/ipc/bridge.ts`
 * `src/background/window/ipc.ts`
 * `src/common/ipc/channel.ts`
+*  src/command/common/preload.ts
+* `src/renderer/ipc/web.ts`
 
+* `src/renderer/store/analysis.ts` -- once
 Disable state check.
-* `src/renderer/store/index.ts`
+* `src/renderer/store/index.ts` -- save, open files
+* `src/renderer/store/index.ts` -- startAnalysis, onFinish

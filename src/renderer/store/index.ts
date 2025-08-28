@@ -151,7 +151,9 @@ class Store {
   private onChangePositionHandlers: ChangePositionHandler[] = [];
   private onUpdateRecordTreeHandlers: UpdateTreeHandler[] = [];
   private onUpdateCustomDataHandlers: UpdateCustomDataHandler[] = [];
-
+  //@LoveKapibarasan
+  public suppressFinishMessage = false;
+  //=====
   constructor() {
     const refs = reactive(this);
     this._reactive = refs;
@@ -814,13 +816,17 @@ class Store {
       useErrorStore().add(e);
     }
   }
-
+  //@LoveKapibarasan
   private onFinish(): void {
     if (this.appState === AppState.ANALYSIS) {
-      useMessageStore().enqueue({ text: "棋譜解析が終了しました。" });
+      if (!this.suppressFinishMessage) {
+        useMessageStore().enqueue({ text: "棋譜解析が終了しました。" });
+      }
       this._appState = AppState.NORMAL;
+      this.suppressFinishMessage = false; // リセット
     }
   }
+  //=====
 
   showResearchDialog(): void {
     if (this._researchState === ResearchState.IDLE) {
@@ -885,9 +891,13 @@ class Store {
   }
 
   startAnalysis(analysisSettings: AnalysisSettings): void {
+    //@LoveKapibarasan
+    /*
     if (this.appState !== AppState.ANALYSIS_DIALOG || useBusyState().isBusy) {
       return;
     }
+    */
+    //=====
     useBusyState().retain();
     api
       .saveAnalysisSettings(analysisSettings)
