@@ -16,6 +16,8 @@
       :flip="flip"
       :black-player-name="t.sente"
       :white-player-name="t.gote"
+      :allow-move="true"
+      @move="onMove"
     >
       <template #right-control>
         <div class="full column">
@@ -58,6 +60,7 @@
         </div>
       </template>
     </BoardView>
+    <div class="informations" v-if="showAnswer">
     <div class="informations">
       <div class="information">
         {{ info }}
@@ -70,10 +73,45 @@
         </span>
       </div>
     </div>
+    </div>
+    <div class="options">
+      <label>
+        <input type="checkbox" v-model="showAnswer" />
+        {{ t.showAnswer }}
+      </label>
+    </div>
+    <div class="bookmarks">
+    <div class="bookmark-controls">
+      <button @click="goNextBookmark">次のブックマークへ →</button>
+    </div>
+</div>
+
   </DialogFrame>
 </template>
 
 <script setup lang="ts">
+
+// @LoveKapibarasan
+// 1.  :allow-move="true"
+//      @move="onMove"
+// 2.     <div class="informations" v-if="showAnswer">
+/*
+3.
+<div class="options">
+      <label>
+        <input type="checkbox" v-model="showAnswer" />
+        {{ t.showAnswer }}
+      </label>
+</div>
+<div class="bookmark-controls">
+  <button @click="goNextBookmark">次のブックマークへ →</button>
+</div>
+*/
+const showAnswer = ref(false);
+const successCounter = ref(0);
+//=====
+
+
 import { Color, ImmutablePosition, Move, Record } from "tsshogi";
 import { onMounted, PropType, ref, reactive, watch, onBeforeUnmount, computed } from "vue";
 import BoardView from "@/renderer/view/primitive/BoardView.vue";
@@ -163,7 +201,9 @@ const updateRecord = () => {
   for (const move of props.pv) {
     record.append(move, { ignoreValidation: true });
   }
-  record.goto(1);
+  //@LoveKapibarasan
+  record.goto(0);
+  //=====
 };
 
 onMounted(() => {
@@ -287,8 +327,58 @@ const insertToComment = () => {
     text: t.insertedComment,
   });
 };
-</script>
+//@LoveKapibarasan
+const onMove = async (move: Move) => {
+  const expectedMove = record.current.next?.move; // PVの次の手
 
+  // 一旦 PVPreview 内の棋譜にユーザーの指し手を反映
+  record.append(move, { ignoreValidation: true });
+
+  // 0.5秒待つ
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  if (expectedMove && move.equals(expectedMove)) {
+    // 正解 → PVを1手進める
+    record.goForward();
+
+    successCounter.value++;
+    if (successCounter.value > 2) {
+      showAnswer.value = true;
+    }
+  } else {
+    // 不正解 → 直前の手を削除
+    record.removeCurrentMove();
+  }
+};
+const goNextBookmark = () => {
+  const bookmarks = store.record.bookmarks;
+  if (!bookmarks.length) return;
+
+  const current = store.record.current.bookmark;
+  const idx = bookmarks.indexOf(current);
+  const next = bookmarks[idx + 1] ?? bookmarks[0]; // 最後なら先頭に戻る
+
+  if (next) {
+    // 本体の棋譜をブックマークにジャンプ
+    store.record.jumpToBookmark(next);
+
+    // PVPreview 用の record を初期化
+    record.clear(store.record.position);
+
+    // 最新の PV を store.record.current.customData から取り出す
+    const data = store.record.current.customData as RecordCustomData | undefined;
+    const pv = data?.researchInfo?.pv || [];
+
+    for (const move of pv) {
+      record.append(move, { ignoreValidation: true });
+    }
+
+    // 先頭に戻す
+    record.goto(0);
+  }
+};
+//=====
+</script>
 <style scoped>
 .board-view {
   margin-left: auto;

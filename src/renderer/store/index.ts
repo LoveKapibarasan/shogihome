@@ -1239,11 +1239,15 @@ class Store {
   }
 
   openRecord(path?: string, opt?: { ply?: number }): void {
+    //@LoveKapibarasan
+    /*
     if (this.appState !== AppState.NORMAL || useBusyState().isBusy) {
       useErrorStore().add(t.pleaseEndActiveFeaturesBeforeOpenRecord);
       return;
     }
     useBusyState().retain();
+    */
+    //=====
     Promise.resolve()
       .then(() => {
         return path || api.showOpenRecordDialog(getStandardRecordFileFormats());
@@ -1275,10 +1279,14 @@ class Store {
   }
 
   saveRecord(options?: { overwrite?: boolean; format?: RecordFileFormat }): void {
+    //@LoveKapibarasan
+    /*
     if (this.appState !== AppState.NORMAL || useBusyState().isBusy) {
       return;
     }
     useBusyState().retain();
+    */
+    //=====
     Promise.resolve()
       .then(() => {
         const path = this.recordManager.recordFilePath;

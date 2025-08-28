@@ -82,6 +82,12 @@
         <button data-hotkey="Escape" @click="onCancel()">
           {{ t.cancel }}
         </button>
+        <button @click="onAnalyzeFolder()">
+          {{ t.analyzeFolder }}
+        </button>
+        <button data-hotkey="Escape" @click="onCancel()">
+          {{ t.cancel }}
+        </button>
       </div>
     </div>
   </DialogFrame>
@@ -148,6 +154,43 @@ const onCancel = () => {
 const onUpdatePlayerSettings = async (val: USIEngines) => {
   engines.value = val;
 };
+//@LoveKapibarasan
+//+       <button @click="onAnalyzeFolder()">
+//+         {{ t.analyzeFolder }}
+//+       </button>
+const onAnalyzeFolder = async () => {
+  try {
+    const dir = await api.showSelectDirectoryDialog();
+    if (!dir) return;
+
+    // ディレクトリ内の全ファイルを取得
+    const files = await api.listFiles(dir);
+
+    // 拡張子フィルタリング（簡易）
+    const kifFiles = files.filter((f) => f.toLowerCase().endsWith(".kif"));
+
+    for (const path of kifFiles) {
+      // 棋譜を読み込み
+      await store.openRecord(path);
+
+      const engine = engines.value.getEngine(engineURI.value);
+      const newSettings = {
+        ...settings.value,
+        usi: engine,
+      };
+
+      // 解析開始
+      store.startAnalysis(newSettings);
+
+      // 保存（上書き）
+      await store.saveRecord({ overwrite: true });
+    }
+
+  } catch (e) {
+    useErrorStore().add(e);
+  }
+};
+//=====
 </script>
 
 <style scoped>

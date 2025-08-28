@@ -193,9 +193,28 @@ export class AnalysisManager {
   }
 
   private onResult(): void {
-    if (!this.searchInfo || !this.lastSearchInfo) {
+    //@LoveKapibarasan
+    if (!this.searchInfo) {
       return;
     }
+    
+    // 0手目の場合は特別処理
+    if (!this.lastSearchInfo) {
+      // 0手目：現在の探索結果をそのまま0手目にコメント書き込み
+      const appSettings = useAppSettings();
+      this.recordManager.appendSearchComment(
+        SearchInfoSenderType.RESEARCHER,
+        appSettings.searchCommentFormat,
+        this.searchInfo,
+        this.settings.commentBehavior,
+        {
+          header: "",
+          engineName: this.settings.usi?.name,
+        },
+      );
+      return;
+    }
+    //=====
     const searchInfo1 = this.settings.descending ? this.searchInfo : this.lastSearchInfo;
     const searchInfo2 = this.settings.descending ? this.lastSearchInfo : this.searchInfo;
     // 逆順の場合は 1 手後の局面に結果を書き込む
