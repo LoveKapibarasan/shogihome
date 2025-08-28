@@ -718,6 +718,7 @@ class Store {
     useMessageStore().enqueue({
       text: t.gameProgress,
       attachments: getMessageAttachmentsByGameResults(results),
+      withCopyButton: true,
     });
   }
 
@@ -730,6 +731,7 @@ class Store {
       useMessageStore().enqueue({
         text: t.allGamesCompleted,
         attachments: getMessageAttachmentsByGameResults(results),
+        withCopyButton: true,
       });
     } else if (specialMoveType) {
       useMessageStore().enqueue({
@@ -1468,6 +1470,7 @@ class Store {
           ],
         },
       ],
+      withCopyButton: true,
     });
   }
 
