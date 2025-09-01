@@ -61,18 +61,24 @@
       </template>
     </BoardView>
     <div class="informations" v-if="showAnswer">
-    <div class="informations">
-      <div class="information">
-        {{ info }}
+      <div class="informations">
+        <div class="information">
+          {{ info }}
+        </div>
+          <div class="information" v-if="scores.length">
+            候補評価値:
+            <span v-for="(s, i) in scores" :key="i">
+              [{{ i + 1 }}] {{ s }}
+            </span>
+        </div>
+        <div class="information">
+          <span v-for="(move, index) in displayPV" :key="index">
+            <span class="move-element" :class="{ selected: move.selected }"
+              >&nbsp;{{ move.text }}&nbsp;</span
+            >
+          </span>
+        </div>
       </div>
-      <div class="information">
-        <span v-for="(move, index) in displayPV" :key="index">
-          <span class="move-element" :class="{ selected: move.selected }"
-            >&nbsp;{{ move.text }}&nbsp;</span
-          >
-        </span>
-      </div>
-    </div>
     </div>
     <div class="options">
       <label>
@@ -328,18 +334,23 @@ const insertToComment = () => {
   });
 };
 //@LoveKapibarasan
+import { playPieceBeat } from "@/renderer/devices/audio";
+import { useErrorStore } from "@/renderer/store/error";
+
 const onMove = async (move: Move) => {
   const expectedMove = record.current.next?.move; // PVの次の手
 
   // 一旦 PVPreview 内の棋譜にユーザーの指し手を反映
   record.append(move, { ignoreValidation: true });
-
+  playPieceBeat(appSettings.pieceVolume);
+  
   // 0.5秒待つ
   await new Promise(resolve => setTimeout(resolve, 500));
 
   if (expectedMove && move.equals(expectedMove)) {
     // 正解 → PVを1手進める
     record.goForward();
+    playPieceBeat(appSettings.pieceVolume);
 
     successCounter.value++;
     if (successCounter.value > 2) {
@@ -365,18 +376,63 @@ const goNextBookmark = () => {
     // PVPreview 用の record を初期化
     record.clear(store.record.position);
 
-    // 最新の PV を store.record.current.customData から取り出す
-    const data = store.record.current.customData as RecordCustomData | undefined;
-    const pv = data?.researchInfo?.pv || [];
+    // PV
+    // 今の局面とコメントを取得
+    const position = store.record.position;
+    const comment = store.record.current.comment;
+    console.log("comment:", comment)
+    // 読み筋を取り出す
+    const pvs = getPVsFromSearchComment(position, comment);
+    const firstPV = pvs[0] || [];
 
-    for (const move of pv) {
+    console.log("firstPV", firstPV);
+
+    for (const move of firstPV) {
       record.append(move, { ignoreValidation: true });
     }
+
 
     // 先頭に戻す
     record.goto(0);
   }
 };
+import {
+  getPVsFromSearchComment,
+  parsePlayerScoreComment,
+  parseResearchScoreComment,
+  parseFloodgateScoreComment,
+  parseShogiGUIPlayerScoreComment,
+  parseShogiGUIAnalysisScoreComment,
+  parseKishinAnalyticsScoreComment,
+  parseKShogiPlayerScoreComment,
+} from "@/renderer/store/record";
+
+
+/**
+ * コメントから評価値を抽出
+ * @param comment ノードのコメント文字列
+ * @returns number[] （複数の候補がある場合もある）
+ */
+function getScoresFromSearchComment(comment: string): number[] {
+  const scores: number[] = [];
+  for (const line of comment.split("\n")) {
+    const score =
+      parsePlayerScoreComment(line) ??
+      parseResearchScoreComment(line) ??
+      parseFloodgateScoreComment(line) ??
+      parseShogiGUIPlayerScoreComment(line) ??
+      parseShogiGUIAnalysisScoreComment(line) ??
+      parseKishinAnalyticsScoreComment(line) ??
+      parseKShogiPlayerScoreComment(line);
+
+    if (score !== undefined) {
+      scores.push(score);
+    }
+  }
+  return scores;
+}
+const scores = computed(() => getScoresFromSearchComment(store.record.current.comment));
+
 //=====
 </script>
 <style scoped>

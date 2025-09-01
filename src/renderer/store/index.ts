@@ -1257,9 +1257,9 @@ class Store {
       useErrorStore().add(t.pleaseEndActiveFeaturesBeforeOpenRecord);
       return;
     }
-    useBusyState().retain();
     */
     //=====
+    useBusyState().retain();
     Promise.resolve()
       .then(() => {
         return path || api.showOpenRecordDialog(getStandardRecordFileFormats());
@@ -1296,9 +1296,9 @@ class Store {
     if (this.appState !== AppState.NORMAL || useBusyState().isBusy) {
       return;
     }
-    useBusyState().retain();
     */
     //=====
+    useBusyState().retain();
     Promise.resolve()
       .then(() => {
         const path = this.recordManager.recordFilePath;

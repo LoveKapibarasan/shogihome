@@ -46,5 +46,6 @@ main → preload → bridge(export) → renderer(api.ts) → 呼び出し側(Vue
 
 * `src/renderer/store/analysis.ts` -- once
 Disable state check.
-* `src/renderer/store/index.ts` -- save, open files
-* `src/renderer/store/index.ts` -- startAnalysis, onFinish
+* `src/renderer/store/index.ts` -- save, open files, startAnalysis, onFinish
+
+* `src/renderer/store/record.ts` -- export
