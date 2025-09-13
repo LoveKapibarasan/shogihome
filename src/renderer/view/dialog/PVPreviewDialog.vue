@@ -98,10 +98,11 @@
 <script setup lang="ts">
 
 // @LoveKapibarasan
-// 1.  :allow-move="true"
-//      @move="onMove"
-// 2.     <div class="informations" v-if="showAnswer">
 /*
+1.  :allow-move="true"
+      @move="onMove"
+2.  <div class="informations" v-if="showAnswer">
+
 3.
 <div class="options">
       <label>
@@ -334,6 +335,14 @@ const insertToComment = () => {
   });
 };
 //@LoveKapibarasan
+watch(
+  () => store, 
+  () => {
+    initialize();
+  },
+  { deep: true }
+);
+
 import { playPieceBeat } from "@/renderer/devices/audio";
 import { useErrorStore } from "@/renderer/store/error";
 
