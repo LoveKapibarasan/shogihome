@@ -1347,11 +1347,14 @@ startBatchAnalysis(analysisSettings: AnalysisSettings, dir?: string): Promise<vo
         const appSettings = useAppSettings();
         const autoDetect = appSettings.textDecodingRule == TextDecodingRule.AUTO_DETECT;
         return api.openRecord(path).then((data) => {
-          const e = this.recordManager.importRecordFromBuffer(data, path, {
-            autoDetect,
-          });
-          return Promise.reject(e);
+        const e = this.recordManager.importRecordFromBuffer(data, path, {
+          autoDetect,
         });
+        if (e) {
+          return Promise.reject(e);
+        }
+       return Promise.resolve();
+      });
       })
       .then(() => {
         if (opt?.ply) {
