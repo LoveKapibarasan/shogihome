@@ -394,7 +394,7 @@ const bridge: Bridge = {
   },
   //@LoveKapibarasan
   listFiles(): Promise<string[]> {
-  throw new Error("This feature is not available on command line tool");
+    throw new Error("This feature is not available on command line tool");
   }
   //=====
 };

@@ -83,12 +83,14 @@
     <div class="options">
       <label>
         <input type="checkbox" v-model="showAnswer" />
-        {{ t.showAnswer }}
+          読み筋を表示
       </label>
     </div>
     <div class="bookmarks">
     <div class="bookmark-controls">
-      <button @click="goNextBookmark">次のブックマークへ →</button>
+      <button @click="goNextBookmark">
+      次のブックマークへ 
+      </button>
     </div>
 </div>
 
@@ -98,22 +100,7 @@
 <script setup lang="ts">
 
 // @LoveKapibarasan
-/*
-1.  :allow-move="true"
-      @move="onMove"
-2.  <div class="informations" v-if="showAnswer">
-
-3.
-<div class="options">
-      <label>
-        <input type="checkbox" v-model="showAnswer" />
-        {{ t.showAnswer }}
-      </label>
-</div>
-<div class="bookmark-controls">
-  <button @click="goNextBookmark">次のブックマークへ →</button>
-</div>
-*/
+//onMove, allowMove, buttons
 const showAnswer = ref(false);
 const successCounter = ref(0);
 //=====
@@ -335,14 +322,6 @@ const insertToComment = () => {
   });
 };
 //@LoveKapibarasan
-watch(
-  () => store, 
-  () => {
-    initialize();
-  },
-  { deep: true }
-);
-
 import { playPieceBeat } from "@/renderer/devices/audio";
 import { useErrorStore } from "@/renderer/store/error";
 
@@ -376,72 +355,13 @@ const goNextBookmark = () => {
 
   const current = store.record.current.bookmark;
   const idx = bookmarks.indexOf(current);
-  const next = bookmarks[idx + 1] ?? bookmarks[0]; // 最後なら先頭に戻る
+  const next = bookmarks[idx + 1] ?? bookmarks[0];
 
   if (next) {
-    // 本体の棋譜をブックマークにジャンプ
     store.record.jumpToBookmark(next);
-
-    // PVPreview 用の record を初期化
-    record.clear(store.record.position);
-
-    // PV
-    // 今の局面とコメントを取得
-    const position = store.record.position;
-    const comment = store.record.current.comment;
-    console.log("comment:", comment)
-    // 読み筋を取り出す
-    const pvs = getPVsFromSearchComment(position, comment);
-    const firstPV = pvs[0] || [];
-
-    console.log("firstPV", firstPV);
-
-    for (const move of firstPV) {
-      record.append(move, { ignoreValidation: true });
-    }
-
-
-    // 先頭に戻す
-    record.goto(0);
+    updateRecord();
   }
 };
-import {
-  getPVsFromSearchComment,
-  parsePlayerScoreComment,
-  parseResearchScoreComment,
-  parseFloodgateScoreComment,
-  parseShogiGUIPlayerScoreComment,
-  parseShogiGUIAnalysisScoreComment,
-  parseKishinAnalyticsScoreComment,
-  parseKShogiPlayerScoreComment,
-} from "@/renderer/store/record";
-
-
-/**
- * コメントから評価値を抽出
- * @param comment ノードのコメント文字列
- * @returns number[] （複数の候補がある場合もある）
- */
-function getScoresFromSearchComment(comment: string): number[] {
-  const scores: number[] = [];
-  for (const line of comment.split("\n")) {
-    const score =
-      parsePlayerScoreComment(line) ??
-      parseResearchScoreComment(line) ??
-      parseFloodgateScoreComment(line) ??
-      parseShogiGUIPlayerScoreComment(line) ??
-      parseShogiGUIAnalysisScoreComment(line) ??
-      parseKishinAnalyticsScoreComment(line) ??
-      parseKShogiPlayerScoreComment(line);
-
-    if (score !== undefined) {
-      scores.push(score);
-    }
-  }
-  return scores;
-}
-const scores = computed(() => getScoresFromSearchComment(store.record.current.comment));
-
 //=====
 </script>
 <style scoped>

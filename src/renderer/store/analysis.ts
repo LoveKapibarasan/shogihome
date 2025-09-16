@@ -40,31 +40,7 @@ export class AnalysisManager {
     }
     return this;
   }
-  //@LoveKapibarasan
-  once(event: "finish", handler: FinishCallback): this;
-  once(event: "error", handler: ErrorCallback): this;
-  once(event: string, handler: unknown): this {
-    switch (event) {
-      case "finish": {
-        const wrapper = () => {
-          this.onFinish = () => {}; // 一回呼んだら消す
-          (handler as FinishCallback)();
-        };
-        this.onFinish = wrapper;
-        break;
-      }
-      case "error": {
-        const wrapper = (e: unknown) => {
-          this.onError = () => {};
-          (handler as ErrorCallback)(e);
-        };
-        this.onError = wrapper;
-        break;
-      }
-    }
-    return this;
-  }
-  //=====
+
 
   async start(settings: AnalysisSettings): Promise<void> {
     if (!settings.usi) {
@@ -220,24 +196,15 @@ export class AnalysisManager {
   private onResult(): void {
     //@LoveKapibarasan
     if (!this.searchInfo) {
-      return;
+    // ダミーの SearchInfo を生成
+      this.searchInfo = {
+        usi: "",        // 必須なので空文字で埋める
+      };
     }
-    
-    // 0手目の場合は特別処理
     if (!this.lastSearchInfo) {
-      // 0手目：現在の探索結果をそのまま0手目にコメント書き込み
-      const appSettings = useAppSettings();
-      this.recordManager.appendSearchComment(
-        SearchInfoSenderType.RESEARCHER,
-        appSettings.searchCommentFormat,
-        this.searchInfo,
-        this.settings.commentBehavior,
-        {
-          header: "",
-          engineName: this.settings.usi?.name,
-        },
-      );
-      return;
+      this.lastSearchInfo = {
+        usi: "",
+      };
     }
     //=====
     const searchInfo1 = this.settings.descending ? this.searchInfo : this.lastSearchInfo;

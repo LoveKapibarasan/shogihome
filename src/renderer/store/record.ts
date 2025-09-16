@@ -1012,15 +1012,3 @@ export class RecordManager {
   }
 }
 
-//@LoveKapibarasan
-export {
-  getPVsFromSearchComment,
-  parsePlayerScoreComment,
-  parseResearchScoreComment,
-  parseFloodgateScoreComment,
-  parseShogiGUIPlayerScoreComment,
-  parseShogiGUIAnalysisScoreComment,
-  parseKishinAnalyticsScoreComment,
-  parseKShogiPlayerScoreComment,
-};
-//=====

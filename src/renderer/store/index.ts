@@ -151,8 +151,9 @@ class Store {
   private onChangePositionHandlers: ChangePositionHandler[] = [];
   private onUpdateRecordTreeHandlers: UpdateTreeHandler[] = [];
   private onUpdateCustomDataHandlers: UpdateCustomDataHandler[] = [];
+
   //@LoveKapibarasan
-  public suppressFinishMessage = false;
+  private abortControllers = new Map<string, AbortController>();
   //=====
   constructor() {
     const refs = reactive(this);
@@ -816,17 +817,13 @@ class Store {
       useErrorStore().add(e);
     }
   }
-  //@LoveKapibarasan
+
   private onFinish(): void {
     if (this.appState === AppState.ANALYSIS) {
-      if (!this.suppressFinishMessage) {
-        useMessageStore().enqueue({ text: "棋譜解析が終了しました。" });
-      }
+      useMessageStore().enqueue({ text: "棋譜解析が終了しました。" });
       this._appState = AppState.NORMAL;
-      this.suppressFinishMessage = false; // リセット
     }
   }
-  //=====
 
   showResearchDialog(): void {
     if (this._researchState === ResearchState.IDLE) {
@@ -890,36 +887,119 @@ class Store {
     this.recordManager.updateSearchInfo(type, info);
   }
 
-  startAnalysis(analysisSettings: AnalysisSettings): void {
-    //@LoveKapibarasan
-    /*
+  startAnalysis(analysisSettings: AnalysisSettings): Promise<void> {
     if (this.appState !== AppState.ANALYSIS_DIALOG || useBusyState().isBusy) {
-      return;
+      return Promise.reject(new Error("AppState not ANALYSIS_DIALOG or busy")); // TODO: i18n
     }
-    */
-    //=====
     useBusyState().retain();
-    api
+    const signal = this.startTask("batchAnalysis");
+    return api
       .saveAnalysisSettings(analysisSettings)
       .then(() => this.analysisManager.start(analysisSettings))
       .then(() => {
         this._appState = AppState.ANALYSIS;
       })
       .catch((e) => {
-        useErrorStore().add("検討の初期化中にエラーが出ました: " + e);
+        const msg = "検討の初期化中にエラーが出ました: " + e;
+        useErrorStore().add(msg);
+        return Promise.reject(new Error(msg));
       })
       .finally(() => {
         useBusyState().release();
       });
   }
+//@LoveKapibarasan
+  startTask(taskName: string) {
+    const controller = new AbortController();
+    this.abortControllers.set(taskName, controller);
+    return controller.signal;
+  }
 
+  stopTask(taskName: string) {
+    this.abortControllers.get(taskName)?.abort();
+    this.abortControllers.delete(taskName);
+  }
+startBatchAnalysis(analysisSettings: AnalysisSettings, dir?: string): Promise<void> {
+  if (this.appState !== AppState.ANALYSIS_DIALOG || useBusyState().isBusy) {
+    return Promise.reject(new Error("AppState not ANALYSIS_DIALOG or busy")); // TODO: i18n
+  }
+
+  // Close AnalysisDialog
+  this.closeModalDialog();
+
+  useBusyState().retain();
+  const signal = this.startTask("batchAnalysis");
+  return Promise.resolve()
+    .then(() => {
+      // dir が渡されていなければダイアログを出す
+      if (dir) {
+        return dir;
+      }
+      return api.showSelectDirectoryDialog();
+    })
+    .then((selectedDir) => {
+      if (!selectedDir) {
+        return;
+      }
+      return api.listFiles(selectedDir).then((files) => {
+        return files.reduce((prev, path) => {
+          return prev
+            // openRecord
+            .then(() => {
+              signal.throwIfAborted();
+              useBusyState().release();
+              return this.openRecord(path);
+            })
+            .then(() => {
+              signal.throwIfAborted();
+              this.showAnalysisDialog();
+              return this.startAnalysis(analysisSettings);
+            })
+            // saveRecord
+            .then(() => {
+              signal.throwIfAborted();
+              // dequeue message
+              const msgStore = useMessageStore();
+              if (msgStore.hasMessage) {
+                msgStore.dequeue();
+              }
+              return this.saveRecord({ overwrite: true });
+            })
+            .then(() => {
+              signal.throwIfAborted();
+              useBusyState().retain();
+            });
+        }, Promise.resolve());
+      })
+      .then(() => {
+        // 全部終わったあとにまとめて通知
+        useMessageStore().enqueue({
+          text: "連続解析が終了しました。",
+          withCopyButton: false,
+        }); //TODO i18n
+      });
+    })
+    .catch((e) => {
+      const msg = "一括解析中にエラーが発生しました: " + e;
+      useErrorStore().add(msg);
+      return Promise.reject(new Error(msg));
+    })
+    .finally(() => {
+      useBusyState().release();
+    });
+}
   stopAnalysis(): void {
     if (this.appState !== AppState.ANALYSIS) {
       return;
     }
+    this.stopTask("batchAnalysis");
     this.analysisManager.close();
     this._appState = AppState.NORMAL;
   }
+
+//=====
+
+
 
   startMateSearch(mateSearchSettings: MateSearchSettings): void {
     if (this.appState !== AppState.MATE_SEARCH_DIALOG || useBusyState().isBusy) {
@@ -1250,17 +1330,13 @@ class Store {
     }
   }
 
-  openRecord(path?: string, opt?: { ply?: number }): void {
-    //@LoveKapibarasan
-    /*
+  openRecord(path?: string, opt?: { ply?: number }): Promise<void> {
     if (this.appState !== AppState.NORMAL || useBusyState().isBusy) {
       useErrorStore().add(t.pleaseEndActiveFeaturesBeforeOpenRecord);
-      return;
+      return Promise.reject(new Error("AppState not NORMAL or busy")); //TODO i18n
     }
-    */
-    //=====
     useBusyState().retain();
-    Promise.resolve()
+    return Promise.resolve()
       .then(() => {
         return path || api.showOpenRecordDialog(getStandardRecordFileFormats());
       })
@@ -1274,7 +1350,7 @@ class Store {
           const e = this.recordManager.importRecordFromBuffer(data, path, {
             autoDetect,
           });
-          return e && Promise.reject(e);
+          return Promise.reject(e);
         });
       })
       .then(() => {
@@ -1283,23 +1359,21 @@ class Store {
         }
       })
       .catch((e) => {
-        useErrorStore().add("棋譜の読み込み中にエラーが出ました: " + e); // TODO: i18n
+          const msg = "棋譜の読み込み中にエラーが出ました: " + e;
+          useErrorStore().add(msg);
+          return Promise.reject(msg);
       })
       .finally(() => {
         useBusyState().release();
       });
   }
 
-  saveRecord(options?: { overwrite?: boolean; format?: RecordFileFormat }): void {
-    //@LoveKapibarasan
-    /*
+  saveRecord(options?: { overwrite?: boolean; format?: RecordFileFormat }): Promise<void> {
     if (this.appState !== AppState.NORMAL || useBusyState().isBusy) {
-      return;
+      return Promise.reject(new Error("AppState not NORMAL or busy")); // TODO: i18n
     }
-    */
-    //=====
     useBusyState().retain();
-    Promise.resolve()
+    return Promise.resolve()
       .then(() => {
         const path = this.recordManager.recordFilePath;
         if (options?.overwrite && path) {
@@ -1346,6 +1420,7 @@ class Store {
       })
       .catch((e) => {
         useErrorStore().add(e);
+        return Promise.reject(e);
       })
       .finally(() => {
         useBusyState().release();

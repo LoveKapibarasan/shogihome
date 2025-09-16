@@ -76,19 +76,30 @@
         </div>
       </div>
       <div class="main-buttons">
-        <button data-hotkey="Enter" autofocus @click="onStart()">
-          {{ t.analyze }}
+        <!-- 1行目 -->
+        <div class="button-row">
+          <button data-hotkey="Enter" autofocus @click="onStart()">
+            {{ t.analyze }}
+          </button>
+        <button @click="onAnalyzeFolder()">
+            連続解析開始
         </button>
         <button data-hotkey="Escape" @click="onCancel()">
           {{ t.cancel }}
         </button>
-        <button @click="onSelectFolder()">
-          フォルダ選択
-        </button>
-        <button @click="onAnalyzeSelectedFolder()">
-          連続解析開始
-        </button>
-      </div>
+  </div>
+
+  <!-- 2行目 -->
+  <div class="button-row">
+    <button @click="onSelectFolder()">
+      フォルダ選択
+    </button>
+    <span v-if="selectedDir" class="selected-dir">
+      {{ selectedDir }}
+    </span>
+  </div>
+</div>
+
     </div>
   </DialogFrame>
 </template>
@@ -155,7 +166,7 @@ const onUpdatePlayerSettings = async (val: USIEngines) => {
   engines.value = val;
 };
 //@LoveKapibarasan
-// Add 2 buttons
+
 const selectedDir = ref<string>("");
 
 const onSelectFolder = async () => {
@@ -168,44 +179,23 @@ const onSelectFolder = async () => {
     useErrorStore().add(e);
   }
 };
-const onAnalyzeSelectedFolder = async () => {
+
+const onAnalyzeFolder = async () => {
   try {
-    if (!selectedDir.value) {
-      useErrorStore().add("先にフォルダを選択してください");
+    const engine = engines.value.getEngine(engineURI.value);
+    if (!engine) {
+      useErrorStore().add(t.engineNotSelected);
       return;
     }
 
-    const files = await api.listFiles(selectedDir.value);
-    const kifFiles = files.filter((f) => f.toLowerCase().endsWith(".kif"));
+    const newSettings = {
+      ...settings.value,
+      usi: engine,
+    };
 
-    for (const path of kifFiles) {
-      // 棋譜を開く
-      await store.openRecord(path);
+    // store 側の batchAnalysis を呼び出す
+    await store.startBatchAnalysis(newSettings, selectedDir.value);
 
-      const engine = engines.value.getEngine(engineURI.value);
-      const newSettings = {
-        ...settings.value,
-        usi: engine,
-      };
-
-      // メッセージ抑制
-      store.suppressFinishMessage = true;
-
-      // finishをPromise化して待つ
-      await new Promise<void>((resolve, reject) => {
-        store.analysisManager.once("finish", async () => {
-          try {
-            await store.saveRecord({ overwrite: true });
-            resolve(); // 保存終わったら次へ
-          } catch (e) {
-            reject(e);
-          }
-        });
-
-        // 解析開始
-        store.startAnalysis(newSettings);
-      });
-    }
   } catch (e) {
     useErrorStore().add(e);
   }
@@ -228,5 +218,26 @@ input.small {
 }
 .selector {
   max-width: 210px;
+}
+
+.main-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.button-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selected-dir {
+  font-size: 0.9em;
+  color: #555;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
