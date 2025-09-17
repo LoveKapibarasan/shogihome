@@ -22,6 +22,7 @@ import {
   exportBOD,
   InitialPositionType,
   ImmutableNode,
+  Record,
 } from "tsshogi";
 import { reactive, UnwrapNestedRefs } from "vue";
 import { GameSettings } from "@/common/settings/game.js";
@@ -71,7 +72,9 @@ import { LayoutProfile } from "@/common/settings/layout.js";
 import { clearURLParams, loadRecordForWebApp, saveRecordForWebApp } from "./webapp.js";
 import { CommentBehavior } from "@/common/settings/comment.js";
 import { Attachment, ListItem } from "@/common/message.js";
-
+//@LoveKapibarasan
+import { ref } from "vue";
+//=====
 export type PVPreview = {
   position: ImmutablePosition;
   engineName?: string;
@@ -154,6 +157,7 @@ class Store {
 
   //@LoveKapibarasan
   private abortControllers = new Map<string, AbortController>();
+  public recordRef = ref<ImmutableRecord>(this.recordManager.record);
   //=====
   constructor() {
     const refs = reactive(this);
@@ -163,6 +167,10 @@ class Store {
         this.onChangePositionHandlers.forEach((handler) => handler());
         saveRecordForWebApp(this.record);
         this.updateResearchPosition();
+        //@LoveKapibarasan
+        // record の参照を差し替えることで Vue に更新を伝える
+        this.recordRef.value = this.recordManager.record;
+        //=====
       })
       .on("updateTree", () => {
         this.onUpdateRecordTreeHandlers.forEach((handler) => handler());
@@ -817,6 +825,35 @@ class Store {
       useErrorStore().add(e);
     }
   }
+  //@LoveKapibarasan
+  async doQuizMove(
+    move: Move,
+    expectedMove: Move,
+    successCounter: number,
+    record: Record,
+  ): Promise<number> {
+    /*
+    if (this.appState !== AppState.Quiz) {
+      return;
+    }
+    */
+    const appSettings = useAppSettings();
+    try {
+      playPieceBeat(appSettings.pieceVolume);
+    } catch (e) {
+      useErrorStore().add(e);
+    }
+    await new Promise(resolve => setTimeout(resolve, 500));
+    if (expectedMove && move.equals(expectedMove)) {
+      record.goForward();
+      playPieceBeat(appSettings.pieceVolume);
+      return ++successCounter;
+    } else {
+      record.removeCurrentMove();
+      return successCounter;
+    }
+  }
+  //=====
 
   private onFinish(): void {
     if (this.appState === AppState.ANALYSIS) {

@@ -43,10 +43,10 @@
         store.csaGameState === CSAGameState.LOGIN_RETRY_INTERVAL
       "
     />
+    <!-- @LoveKapibarasan -->
     <PVPreviewDialog
       v-if="store.pvPreview"
-      :key="pvPreviewKey"
-      :position="store.pvPreview.position"
+      :position="store.recordRef.position"
       :name="store.pvPreview.engineName"
       :multi-pv="store.pvPreview.multiPV"
       :depth="store.pvPreview.depth"
@@ -57,7 +57,6 @@
       :upper-bound="store.pvPreview.upperBound"
       :pv="store.pvPreview.pv"
       @close="store.closePVPreviewDialog()"
-      @refresh="refreshPVPreview"
     />
     <!-- PCブラウザの場合のみライセンスへの遷移が無いので、画面の隅にボタンを表示する。 -->
     <button v-if="!isNative() && !isMobileWebApp()" class="copyright" @click="openCopyright">
@@ -186,14 +185,7 @@ const style = computed(() => {
   }
   return style;
 });
-//@LoveKapibarasan
-// 再描画用のキー
-const pvPreviewKey = ref(0);
 
-function refreshPVPreview() {
-  pvPreviewKey.value++;
-}
-//=====
 </script>
 
 <style scoped>

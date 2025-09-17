@@ -65,18 +65,15 @@
         <div class="information">
           {{ info }}
         </div>
-          <div class="information" v-if="scores.length">
-            候補評価値:
-            <span v-for="(s, i) in scores" :key="i">
-              [{{ i + 1 }}] {{ s }}
-            </span>
+        <div class="information" v-if="score">
+          評価値: {{ score }}
         </div>
         <div class="information">
-          <span v-for="(move, index) in displayPV" :key="index">
-            <span class="move-element" :class="{ selected: move.selected }"
-              >&nbsp;{{ move.text }}&nbsp;</span
-            >
-          </span>
+            <span v-for="(move, index) in displayPV" :key="index">
+              <span class="move-element" :class="{ selected: move.selected }">
+                &nbsp;{{ move.text }}&nbsp;
+              </span>
+            </span>
         </div>
       </div>
     </div>
@@ -182,7 +179,9 @@ const store = useStore();
 const messageStore = useMessageStore();
 const appSettings = useAppSettings();
 const maxSize = reactive(new RectSize(0, 0));
-const record = reactive(new Record());
+//@LoveKapibarasan
+const record = reactive(new Record()) as unknown as Record;
+//=====
 const flip = ref(appSettings.boardFlipping);
 
 const updateSize = () => {
@@ -322,32 +321,20 @@ const insertToComment = () => {
   });
 };
 //@LoveKapibarasan
-import { playPieceBeat } from "@/renderer/devices/audio";
-import { useErrorStore } from "@/renderer/store/error";
 
 const onMove = async (move: Move) => {
-  const expectedMove = record.current.next?.move; // PVの次の手
+  const expectedMove =
+  record.moves[record.current.ply]?.move instanceof Move
+      ? (record.moves[record.current.ply].move as Move)
+      : null;
 
-  // 一旦 PVPreview 内の棋譜にユーザーの指し手を反映
-  record.append(move, { ignoreValidation: true });
-  playPieceBeat(appSettings.pieceVolume);
-  
-  // 0.5秒待つ
-  await new Promise(resolve => setTimeout(resolve, 500));
-
-  if (expectedMove && move.equals(expectedMove)) {
-    // 正解 → PVを1手進める
-    record.goForward();
-    playPieceBeat(appSettings.pieceVolume);
-
-    successCounter.value++;
-    if (successCounter.value > 2) {
-      showAnswer.value = true;
-    }
-  } else {
-    // 不正解 → 直前の手を削除
-    record.removeCurrentMove();
-  }
+  if (!expectedMove) return;
+  successCounter.value = await store.doQuizMove(
+    move,
+    expectedMove,
+    successCounter.value,
+    record
+  );
 };
 const goNextBookmark = () => {
   const bookmarks = store.record.bookmarks;
@@ -358,7 +345,7 @@ const goNextBookmark = () => {
   const next = bookmarks[idx + 1] ?? bookmarks[0];
 
   if (next) {
-    store.record.jumpToBookmark(next);
+    store.jumpToBookmark(next);
     updateRecord();
   }
 };
