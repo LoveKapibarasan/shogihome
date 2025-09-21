@@ -24,7 +24,9 @@ import {
   ImmutableNode,
   Record,
 } from "tsshogi";
-import { reactive, UnwrapNestedRefs } from "vue";
+//@LoveKapibarasan
+import { reactive, UnwrapNestedRefs, ref } from "vue";
+//=====
 import { GameSettings } from "@/common/settings/game.js";
 import { ClockSoundTarget, Tab, TextDecodingRule } from "@/common/settings/app.js";
 import { beepShort, beepUnlimited, playPieceBeat, stopBeep } from "@/renderer/devices/audio.js";
@@ -72,9 +74,7 @@ import { LayoutProfile } from "@/common/settings/layout.js";
 import { clearURLParams, loadRecordForWebApp, saveRecordForWebApp } from "./webapp.js";
 import { CommentBehavior } from "@/common/settings/comment.js";
 import { Attachment, ListItem } from "@/common/message.js";
-//@LoveKapibarasan
-import { ref } from "vue";
-//=====
+
 export type PVPreview = {
   position: ImmutablePosition;
   engineName?: string;
@@ -156,7 +156,6 @@ class Store {
   private onUpdateCustomDataHandlers: UpdateCustomDataHandler[] = [];
 
   //@LoveKapibarasan
-  private abortControllers = new Map<string, AbortController>();
   public recordRef = ref<ImmutableRecord>(this.recordManager.record);
   //=====
   constructor() {
@@ -468,10 +467,11 @@ class Store {
     }
   }
 
-  closeModalDialog(): void {
+  closeModalDialog(): Promise<void> {
     if (!useBusyState().isBusy) {
       this.destroyModalDialog();
     }
+    return Promise.resolve();
   }
 
   get isAppSettingsDialogVisible(): boolean {
@@ -945,51 +945,6 @@ class Store {
       });
   }
   //@LoveKapibarasan
-  startTask(taskName: string) {
-    const controller = new AbortController();
-    this.abortControllers.set(taskName, controller);
-    return controller.signal;
-  }
-
-  stopTask(taskName: string) {
-    this.abortControllers.get(taskName)?.abort();
-    this.abortControllers.delete(taskName);
-  }
-
-  wrapWithAbort<T>(signal: AbortSignal, fn: () => Promise<T>): () => Promise<T> {
-    return async () => {
-      signal.throwIfAborted();
-      const result = await fn();
-      signal.throwIfAborted();
-      return result;
-    };
-  }
-
-  //
-  async runWithState<T>(
-    afterState: AppState,
-    process: () => Promise<T>,
-    processName?: string,
-    requireUseBusy: boolean = true,
-  ): Promise<T> {
-    // Busy 遷移
-    if (requireUseBusy) useBusyState().retain();
-
-    try {
-      const result = await process();
-      this._appState = afterState; // State Change
-      return result;
-    } catch (e) {
-      useErrorStore().add(
-        new Error(`process ${processName ?? process.name ?? "unknown"} failed: ${e}`),
-      );
-      throw e;
-    } finally {
-      // Busy を後の状態に合わせる
-      if (requireUseBusy) useBusyState().release();
-    }
-  }
-
   async startBatchAnalysis(analysisSettings: AnalysisSettings, dir?: string): Promise<void> {
     if (this.appState !== AppState.ANALYSIS_DIALOG || useBusyState().isBusy) {
       const e = new Error("AppState not ANALYSIS_DIALOG or busy");
@@ -998,49 +953,48 @@ class Store {
     }
 
     // Close AnalysisDialog
-    this.closeModalDialog();
+    await this.closeModalDialog();
     useBusyState().retain();
 
-    const signal = this.startTask("batchAnalysis");
-
     try {
-      const selectedDir = dir ?? (await api.showSelectDirectoryDialog());
-      if (!selectedDir) return;
-
+      const selectedDir = dir && dir.length > 0 ? dir : await api.showSelectDirectoryDialog();
+      if (!selectedDir) {
+        useMessageStore().enqueue({ text: "正しいフォルダーをまず選択してください。" });
+        return;
+      }
       const files = await api.listFiles(selectedDir);
+      useBusyState().release();
 
       for (const path of files) {
         // openRecord
-        await this.runWithState(AppState.NORMAL, () => this.openRecord(path), "openRecord");
+        await this.openRecord(path);
 
         // startAnalysis
-        await this.wrapWithAbort(signal, () =>
-          this.runWithState(
-            AppState.NORMAL,
-            async () => {
-              this.showAnalysisDialog();
-              return this.startAnalysis(analysisSettings);
-            },
-            "startAnalysis",
-          ),
-        )();
-
+        this._appState = AppState.ANALYSIS_DIALOG;
+        await new Promise<void>((resolve, reject) => {
+          this.analysisManager
+            .once("finish", () => {
+              this.onFinish();
+              resolve();
+            })
+            .once("error", (e) => {
+              useErrorStore().add(e);
+              reject(e);
+              return;
+            })
+            .once("cancel", () => {
+              useMessageStore().enqueue({ text: "解析がキャンセルされました。" });
+              return;
+            });
+          this.startAnalysis(analysisSettings).catch(reject);
+        });
         // dequeue message
         const msgStore = useMessageStore();
         if (msgStore.hasMessage) {
           msgStore.dequeue();
         }
-
         // saveRecord
-        await this.runWithState(
-          AppState.NORMAL,
-          async () => {
-            return this.saveRecord({ overwrite: true });
-          },
-          "saveRecord",
-        );
-
-        useBusyState().retain();
+        await this.saveRecord({ overwrite: true });
       }
       // 全部終わったあとに通知
       useMessageStore().enqueue({
@@ -1051,18 +1005,21 @@ class Store {
       useErrorStore().add(msg);
       throw new Error(msg);
     } finally {
-      useBusyState().release();
+      if (useBusyState().isBusy) {
+        useBusyState().release();
+      }
+      if (this._appState !== AppState.NORMAL) {
+        this._appState = AppState.NORMAL;
+      }
     }
   }
   stopAnalysis(): void {
     if (this.appState !== AppState.ANALYSIS) {
       return;
     }
-    this.stopTask("batchAnalysis");
-    this.analysisManager.close();
+    this.analysisManager.cancel();
     this._appState = AppState.NORMAL;
   }
-
   //=====
 
   startMateSearch(mateSearchSettings: MateSearchSettings): void {
@@ -1088,7 +1045,9 @@ class Store {
         useErrorStore().add(e);
       })
       .finally(() => {
-        useBusyState().release();
+        if (useBusyState().isBusy) {
+          useBusyState().release();
+        }
       });
   }
 

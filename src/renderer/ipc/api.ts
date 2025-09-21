@@ -145,6 +145,7 @@ export interface API {
 
   //@LoveKapibarasan
   listFiles(dir: string): Promise<string[]>;
+  listKifuFiles(dir: string): Promise<string[]>;
   //=====
 }
 
@@ -304,6 +305,14 @@ const api: API = {
   //@LoveKapibarasan
   async listFiles(dir: string): Promise<string[]> {
     return await bridge.listFiles(dir);
+  },
+
+  async listKifuFiles(dir: string): Promise<string[]> {
+    const kifuExtensions = Object.values(RecordFileFormat);
+    const allFiles = await api.listFiles(dir);
+    return allFiles.filter((file) =>
+      kifuExtensions.some((ext) => file.toLowerCase().endsWith(ext)),
+    );
   },
   //=====
 };

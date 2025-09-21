@@ -30,6 +30,10 @@ import * as _zh_tw from "dayjs/locale/zh-tw";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { useErrorStore } from "@/renderer/store/error.js";
 
+//@LoveKapibarasan
+import { defaultAnalysisSettings } from "@/common/settings/analysis";
+//=====
+
 api.log(LogLevel.INFO, `start renderer process: APP_VERSION=${appInfo.appVersion}`);
 
 // setup libraries
@@ -88,7 +92,7 @@ Promise.allSettled([
   // 起動時パラメータの取得
   api
     .fetchProcessArgs()
-    .then((args) => {
+    .then(async (args) => {
       api.log(LogLevel.DEBUG, `args: ${JSON.stringify(args)}`);
       // 棋譜の読み込み
       if (args?.path) {
@@ -98,6 +102,19 @@ Promise.allSettled([
       if (args?.layoutProfile) {
         store.updateLayoutProfile(args.layoutProfile);
       }
+      //@LoveKapibarasan
+      if (args?.batchAnalysisDir && args?.batchAnalysisEngine) {
+        store.showAnalysisDialog();
+        const engines = await api.loadUSIEngines();
+        const engine = engines.getEngine(args.batchAnalysisEngine);
+
+        const newSettings = {
+          ...defaultAnalysisSettings(),
+          usi: engine,
+        };
+        store.startBatchAnalysis(newSettings, args.batchAnalysisDir);
+      }
+      //=====
     })
     .catch((e) => {
       useErrorStore().add(new Error("起動パラメーターの取得に失敗しました: " + e));

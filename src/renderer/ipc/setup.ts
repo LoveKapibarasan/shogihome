@@ -31,6 +31,11 @@ import { useBusyState } from "@/renderer/store/busy.js";
 import { useConfirmationStore } from "@/renderer/store/confirm.js";
 import { useMessageStore } from "@/renderer/store/message.js";
 
+//@LoveKapibarasan
+import { defaultAnalysisSettings } from "@/common/settings/analysis";
+import { USIEngines } from "@/common/settings/usi.js";
+//=====
+
 export function setup(): void {
   const store = useStore();
   const appSettings = useAppSettings();
@@ -311,6 +316,19 @@ export function setup(): void {
       },
     });
   });
+  //@LoveKapibarasan
+  bridge.onBatchAnalysis(async (path, engineURI) => {
+    const engines = new USIEngines(await bridge.loadUSIEngines());
+    const engine = engines.getEngine(engineURI);
+
+    const newSettings = {
+      ...defaultAnalysisSettings(),
+      usi: engine,
+    };
+
+    await store.startBatchAnalysis(newSettings, path);
+  });
+  //=====
 
   // USI
   bridge.onUSIBestMove(onUSIBestMove);

@@ -81,18 +81,34 @@
           <button data-hotkey="Enter" autofocus @click="onStart()">
             {{ t.analyze }}
           </button>
-          <button @click="onAnalyzeFolder()">連続解析開始</button>
+          <button @click="onAnalyzeFolder()">
+            連続解析開始
+          </button>
           <button data-hotkey="Escape" @click="onCancel()">
             {{ t.cancel }}
           </button>
+          <button @click="onSelectFolder()">
+            フォルダ選択
+          </button>
         </div>
-
         <!-- 2行目 -->
         <div class="button-row">
-          <button @click="onSelectFolder()">フォルダ選択</button>
-          <span v-if="selectedDir" class="selected-dir">
+          <template v-if="isEditing">
+            <input 
+              v-model="selectedDir" 
+              @blur="isEditing = false" 
+              @keyup.enter="isEditing = false"
+            />
+          </template>
+          <template v-else>
+            <span 
+              v-if="selectedDir" 
+              class="selected-dir"
+              @dblclick="isEditing = true"
+            >
             {{ selectedDir }}
-          </span>
+            </span>
+          </template>
         </div>
       </div>
     </div>
@@ -161,6 +177,7 @@ const onUpdatePlayerSettings = async (val: USIEngines) => {
   engines.value = val;
 };
 //@LoveKapibarasan
+const isEditing = ref(false)
 const selectedDir = ref<string>("");
 
 const onSelectFolder = async () => {
@@ -186,8 +203,6 @@ const onAnalyzeFolder = async () => {
       ...settings.value,
       usi: engine,
     };
-
-    // store 側の batchAnalysis を呼び出す
     await store.startBatchAnalysis(newSettings, selectedDir.value);
   } catch (e) {
     useErrorStore().add(e);

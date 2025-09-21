@@ -12,6 +12,10 @@ import { t } from "@/common/i18n/index.js";
 type FinishCallback = () => void;
 type ErrorCallback = (e: unknown) => void;
 
+//@LoveKapibarasan
+type CancelCallback = () => void;
+//=====
+
 export class AnalysisManager {
   private researcher?: USIPlayer;
   private settings = defaultAnalysisSettings();
@@ -24,11 +28,18 @@ export class AnalysisManager {
   private onError: ErrorCallback = () => {
     /* noop */
   };
+  //@LoveKapibarasan
+  private onCancel: CancelCallback = () => {
+    /* noop */
+  };
 
   constructor(private recordManager: RecordManager) {}
 
   on(event: "finish", handler: FinishCallback): this;
   on(event: "error", handler: ErrorCallback): this;
+  //@LoveKapibarasan
+  on(event: "cancel", handler: CancelCallback): this;
+  //=====
   on(event: string, handler: unknown): this {
     switch (event) {
       case "finish":
@@ -37,9 +48,39 @@ export class AnalysisManager {
       case "error":
         this.onError = handler as ErrorCallback;
         break;
+      case "cancel":
+        this.onCancel = handler as CancelCallback;
+        break;
     }
     return this;
   }
+  once(event: "finish", handler: FinishCallback): this;
+  once(event: "error", handler: ErrorCallback): this;
+  once(event: "cancel", handler: CancelCallback): this;
+  once(event: string, handler: unknown): this {
+    switch (event) {
+      case "finish":
+        this.onFinish = () => {
+          (handler as FinishCallback)();
+          this.onFinish = () => {}; // 呼ばれたらクリア
+        };
+        break;
+      case "error":
+        this.onError = (e) => {
+          (handler as ErrorCallback)(e);
+          this.onError = () => {};
+        };
+        break;
+      case "cancel":
+        this.onCancel = () => {
+          (handler as CancelCallback)();
+          this.onCancel = () => {};
+        };
+        break;
+    }
+    return this;
+  }
+  //=====
 
   async start(settings: AnalysisSettings): Promise<void> {
     if (!settings.usi) {
@@ -85,6 +126,12 @@ export class AnalysisManager {
       this.onError(e);
     });
   }
+  //@Lovekapibarasan
+  cancel(): void {
+    this.close();
+    this.onCancel();
+  }
+  //=====
 
   private async setupEngine(engine: USIEngine): Promise<void> {
     if (this.researcher) {
