@@ -185,7 +185,6 @@ const style = computed(() => {
   }
   return style;
 });
-
 </script>
 
 <style scoped>

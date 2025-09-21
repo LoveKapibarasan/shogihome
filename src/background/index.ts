@@ -195,7 +195,6 @@ app.on("ready", () => {
     return;
   }
   createWindow(onMainWindowClosed);
-
 });
 
 // Exit cleanly on request from parent process in development mode.

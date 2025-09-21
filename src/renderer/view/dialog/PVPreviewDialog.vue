@@ -60,48 +60,41 @@
         </div>
       </template>
     </BoardView>
-    <div class="informations" v-if="showAnswer">
+    <div v-if="showAnswer" class="informations">
       <div class="informations">
         <div class="information">
           {{ info }}
         </div>
-        <div class="information" v-if="score">
-          評価値: {{ score }}
-        </div>
+        <div v-if="score" class="information">評価値: {{ score }}</div>
         <div class="information">
-            <span v-for="(move, index) in displayPV" :key="index">
-              <span class="move-element" :class="{ selected: move.selected }">
-                &nbsp;{{ move.text }}&nbsp;
-              </span>
+          <span v-for="(move, index) in displayPV" :key="index">
+            <span class="move-element" :class="{ selected: move.selected }">
+              &nbsp;{{ move.text }}&nbsp;
             </span>
+          </span>
         </div>
       </div>
     </div>
     <div class="options">
       <label>
-        <input type="checkbox" v-model="showAnswer" />
-          読み筋を表示
+        <input v-model="showAnswer" type="checkbox" />
+        読み筋を表示
       </label>
     </div>
     <div class="bookmarks">
-    <div class="bookmark-controls">
-      <button @click="goNextBookmark">
-      次のブックマークへ 
-      </button>
+      <div class="bookmark-controls">
+        <button @click="goNextBookmark">次のブックマークへ</button>
+      </div>
     </div>
-</div>
-
   </DialogFrame>
 </template>
 
 <script setup lang="ts">
-
 // @LoveKapibarasan
 //onMove, allowMove, buttons
 const showAnswer = ref(false);
 const successCounter = ref(0);
 //=====
-
 
 import { Color, ImmutablePosition, Move, Record } from "tsshogi";
 import { onMounted, PropType, ref, reactive, watch, onBeforeUnmount, computed } from "vue";
@@ -324,17 +317,12 @@ const insertToComment = () => {
 
 const onMove = async (move: Move) => {
   const expectedMove =
-  record.moves[record.current.ply]?.move instanceof Move
+    record.moves[record.current.ply]?.move instanceof Move
       ? (record.moves[record.current.ply].move as Move)
       : null;
 
   if (!expectedMove) return;
-  successCounter.value = await store.doQuizMove(
-    move,
-    expectedMove,
-    successCounter.value,
-    record
-  );
+  successCounter.value = await store.doQuizMove(move, expectedMove, successCounter.value, record);
 };
 const goNextBookmark = () => {
   const bookmarks = store.record.bookmarks;

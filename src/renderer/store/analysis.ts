@@ -41,7 +41,6 @@ export class AnalysisManager {
     return this;
   }
 
-
   async start(settings: AnalysisSettings): Promise<void> {
     if (!settings.usi) {
       throw new Error("エンジンが設定されていません。");
@@ -196,9 +195,9 @@ export class AnalysisManager {
   private onResult(): void {
     //@LoveKapibarasan
     if (!this.searchInfo) {
-    // ダミーの SearchInfo を生成
+      // ダミーの SearchInfo を生成
       this.searchInfo = {
-        usi: "",        // 必須なので空文字で埋める
+        usi: "", // 必須なので空文字で埋める
       };
     }
     if (!this.lastSearchInfo) {

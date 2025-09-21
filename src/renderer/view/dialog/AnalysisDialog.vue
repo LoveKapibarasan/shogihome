@@ -81,25 +81,20 @@
           <button data-hotkey="Enter" autofocus @click="onStart()">
             {{ t.analyze }}
           </button>
-        <button @click="onAnalyzeFolder()">
-            連続解析開始
-        </button>
-        <button data-hotkey="Escape" @click="onCancel()">
-          {{ t.cancel }}
-        </button>
-  </div>
+          <button @click="onAnalyzeFolder()">連続解析開始</button>
+          <button data-hotkey="Escape" @click="onCancel()">
+            {{ t.cancel }}
+          </button>
+        </div>
 
-  <!-- 2行目 -->
-  <div class="button-row">
-    <button @click="onSelectFolder()">
-      フォルダ選択
-    </button>
-    <span v-if="selectedDir" class="selected-dir">
-      {{ selectedDir }}
-    </span>
-  </div>
-</div>
-
+        <!-- 2行目 -->
+        <div class="button-row">
+          <button @click="onSelectFolder()">フォルダ選択</button>
+          <span v-if="selectedDir" class="selected-dir">
+            {{ selectedDir }}
+          </span>
+        </div>
+      </div>
     </div>
   </DialogFrame>
 </template>
@@ -194,7 +189,6 @@ const onAnalyzeFolder = async () => {
 
     // store 側の batchAnalysis を呼び出す
     await store.startBatchAnalysis(newSettings, selectedDir.value);
-
   } catch (e) {
     useErrorStore().add(e);
   }

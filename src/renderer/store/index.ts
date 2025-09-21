@@ -843,7 +843,7 @@ class Store {
     } catch (e) {
       useErrorStore().add(e);
     }
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
     if (expectedMove && move.equals(expectedMove)) {
       record.goForward();
       playPieceBeat(appSettings.pieceVolume);
@@ -929,7 +929,6 @@ class Store {
       return Promise.reject(new Error("AppState not ANALYSIS_DIALOG or busy")); // TODO: i18n
     }
     useBusyState().retain();
-    const signal = this.startTask("batchAnalysis");
     return api
       .saveAnalysisSettings(analysisSettings)
       .then(() => this.analysisManager.start(analysisSettings))
@@ -945,7 +944,7 @@ class Store {
         useBusyState().release();
       });
   }
-//@LoveKapibarasan
+  //@LoveKapibarasan
   startTask(taskName: string) {
     const controller = new AbortController();
     this.abortControllers.set(taskName, controller);
@@ -956,75 +955,105 @@ class Store {
     this.abortControllers.get(taskName)?.abort();
     this.abortControllers.delete(taskName);
   }
-startBatchAnalysis(analysisSettings: AnalysisSettings, dir?: string): Promise<void> {
-  if (this.appState !== AppState.ANALYSIS_DIALOG || useBusyState().isBusy) {
-    return Promise.reject(new Error("AppState not ANALYSIS_DIALOG or busy")); // TODO: i18n
+
+  wrapWithAbort<T>(signal: AbortSignal, fn: () => Promise<T>): () => Promise<T> {
+    return async () => {
+      signal.throwIfAborted();
+      const result = await fn();
+      signal.throwIfAborted();
+      return result;
+    };
   }
 
-  // Close AnalysisDialog
-  this.closeModalDialog();
+  //
+  async runWithState<T>(
+    afterState: AppState,
+    process: () => Promise<T>,
+    processName?: string,
+    requireUseBusy: boolean = true,
+  ): Promise<T> {
+    // Busy 遷移
+    if (requireUseBusy) useBusyState().retain();
 
-  useBusyState().retain();
-  const signal = this.startTask("batchAnalysis");
-  return Promise.resolve()
-    .then(() => {
-      // dir が渡されていなければダイアログを出す
-      if (dir) {
-        return dir;
-      }
-      return api.showSelectDirectoryDialog();
-    })
-    .then((selectedDir) => {
-      if (!selectedDir) {
-        return;
-      }
-      return api.listFiles(selectedDir).then((files) => {
-        return files.reduce((prev, path) => {
-          return prev
-            // openRecord
-            .then(() => {
-              signal.throwIfAborted();
-              useBusyState().release();
-              return this.openRecord(path);
-            })
-            .then(() => {
-              signal.throwIfAborted();
+    try {
+      const result = await process();
+      this._appState = afterState; // State Change
+      return result;
+    } catch (e) {
+      useErrorStore().add(
+        new Error(`process ${processName ?? process.name ?? "unknown"} failed: ${e}`),
+      );
+      throw e;
+    } finally {
+      // Busy を後の状態に合わせる
+      if (requireUseBusy) useBusyState().release();
+    }
+  }
+
+  async startBatchAnalysis(analysisSettings: AnalysisSettings, dir?: string): Promise<void> {
+    if (this.appState !== AppState.ANALYSIS_DIALOG || useBusyState().isBusy) {
+      const e = new Error("AppState not ANALYSIS_DIALOG or busy");
+      useErrorStore().add(e);
+      return Promise.reject(e); // TODO: i18n
+    }
+
+    // Close AnalysisDialog
+    this.closeModalDialog();
+    useBusyState().retain();
+
+    const signal = this.startTask("batchAnalysis");
+
+    try {
+      const selectedDir = dir ?? (await api.showSelectDirectoryDialog());
+      if (!selectedDir) return;
+
+      const files = await api.listFiles(selectedDir);
+
+      for (const path of files) {
+        // openRecord
+        await this.runWithState(AppState.NORMAL, () => this.openRecord(path), "openRecord");
+
+        // startAnalysis
+        await this.wrapWithAbort(signal, () =>
+          this.runWithState(
+            AppState.NORMAL,
+            async () => {
               this.showAnalysisDialog();
               return this.startAnalysis(analysisSettings);
-            })
-            // saveRecord
-            .then(() => {
-              signal.throwIfAborted();
-              // dequeue message
-              const msgStore = useMessageStore();
-              if (msgStore.hasMessage) {
-                msgStore.dequeue();
-              }
-              return this.saveRecord({ overwrite: true });
-            })
-            .then(() => {
-              signal.throwIfAborted();
-              useBusyState().retain();
-            });
-        }, Promise.resolve());
-      })
-      .then(() => {
-        // 全部終わったあとにまとめて通知
-        useMessageStore().enqueue({
-          text: "連続解析が終了しました。",
-          withCopyButton: false,
-        }); //TODO i18n
+            },
+            "startAnalysis",
+          ),
+        )();
+
+        // dequeue message
+        const msgStore = useMessageStore();
+        if (msgStore.hasMessage) {
+          msgStore.dequeue();
+        }
+
+        // saveRecord
+        await this.runWithState(
+          AppState.NORMAL,
+          async () => {
+            return this.saveRecord({ overwrite: true });
+          },
+          "saveRecord",
+        );
+
+        useBusyState().retain();
+      }
+      // 全部終わったあとに通知
+      useMessageStore().enqueue({
+        text: "連続解析が終了しました。",
       });
-    })
-    .catch((e) => {
+    } catch (e) {
       const msg = "一括解析中にエラーが発生しました: " + e;
       useErrorStore().add(msg);
-      return Promise.reject(new Error(msg));
-    })
-    .finally(() => {
+      throw new Error(msg);
+    } finally {
       useBusyState().release();
-    });
-}
+    }
+  }
   stopAnalysis(): void {
     if (this.appState !== AppState.ANALYSIS) {
       return;
@@ -1034,9 +1063,7 @@ startBatchAnalysis(analysisSettings: AnalysisSettings, dir?: string): Promise<vo
     this._appState = AppState.NORMAL;
   }
 
-//=====
-
-
+  //=====
 
   startMateSearch(mateSearchSettings: MateSearchSettings): void {
     if (this.appState !== AppState.MATE_SEARCH_DIALOG || useBusyState().isBusy) {
@@ -1384,14 +1411,14 @@ startBatchAnalysis(analysisSettings: AnalysisSettings, dir?: string): Promise<vo
         const appSettings = useAppSettings();
         const autoDetect = appSettings.textDecodingRule == TextDecodingRule.AUTO_DETECT;
         return api.openRecord(path).then((data) => {
-        const e = this.recordManager.importRecordFromBuffer(data, path, {
-          autoDetect,
+          const e = this.recordManager.importRecordFromBuffer(data, path, {
+            autoDetect,
+          });
+          if (e) {
+            return Promise.reject(e);
+          }
+          return Promise.resolve();
         });
-        if (e) {
-          return Promise.reject(e);
-        }
-       return Promise.resolve();
-      });
       })
       .then(() => {
         if (opt?.ply) {
@@ -1399,9 +1426,9 @@ startBatchAnalysis(analysisSettings: AnalysisSettings, dir?: string): Promise<vo
         }
       })
       .catch((e) => {
-          const msg = "棋譜の読み込み中にエラーが出ました: " + e;
-          useErrorStore().add(msg);
-          return Promise.reject(msg);
+        const msg = "棋譜の読み込み中にエラーが出ました: " + e;
+        useErrorStore().add(msg);
+        return Promise.reject(msg);
       })
       .finally(() => {
         useBusyState().release();
