@@ -838,6 +838,7 @@ class Store {
     }
     */
     const appSettings = useAppSettings();
+    console.log("in doQuizMove", move, expectedMove, successCounter, record);
     try {
       playPieceBeat(appSettings.pieceVolume);
     } catch (e) {
@@ -845,10 +846,12 @@ class Store {
     }
     await new Promise((resolve) => setTimeout(resolve, 500));
     if (expectedMove && move.equals(expectedMove)) {
+      console.log("Correct Move", move);
       record.goForward();
       playPieceBeat(appSettings.pieceVolume);
       return ++successCounter;
     } else {
+      console.log("Wrong move", move)
       record.removeCurrentMove();
       return successCounter;
     }

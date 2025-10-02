@@ -314,14 +314,16 @@ const insertToComment = () => {
   });
 };
 //@LoveKapibarasan
-
 const onMove = async (move: Move) => {
   const expectedMove =
     record.moves[record.current.ply]?.move instanceof Move
       ? (record.moves[record.current.ply].move as Move)
       : null;
 
-  if (!expectedMove) return;
+  if (!expectedMove) {
+    console.log("No expected Move")
+    return;
+  }
   successCounter.value = await store.doQuizMove(move, expectedMove, successCounter.value, record);
 };
 const goNextBookmark = () => {
@@ -334,7 +336,6 @@ const goNextBookmark = () => {
 
   if (next) {
     store.jumpToBookmark(next);
-    updateRecord();
   }
 };
 //=====
