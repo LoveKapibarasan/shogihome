@@ -43,10 +43,9 @@
         store.csaGameState === CSAGameState.LOGIN_RETRY_INTERVAL
       "
     />
-    <!-- @LoveKapibarasan -->
     <PVPreviewDialog
       v-if="store.pvPreview"
-      :position="store.recordRef.position"
+      :position="store.pvPreview.position"
       :name="store.pvPreview.engineName"
       :multi-pv="store.pvPreview.multiPV"
       :depth="store.pvPreview.depth"

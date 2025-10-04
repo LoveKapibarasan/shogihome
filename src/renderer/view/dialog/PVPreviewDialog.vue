@@ -335,7 +335,9 @@ const goNextBookmark = () => {
   const next = bookmarks[idx + 1] ?? bookmarks[0];
 
   if (next) {
+    store.closePVPreviewDialog()
     store.jumpToBookmark(next);
+    store.showPVPreviewDialog()
   }
 };
 //=====

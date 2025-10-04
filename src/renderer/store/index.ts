@@ -24,9 +24,7 @@ import {
   ImmutableNode,
   Record,
 } from "tsshogi";
-//@LoveKapibarasan
-import { reactive, UnwrapNestedRefs, ref } from "vue";
-//=====
+import { reactive, UnwrapNestedRef } from "vue";
 import { GameSettings } from "@/common/settings/game.js";
 import { ClockSoundTarget, Tab, TextDecodingRule } from "@/common/settings/app.js";
 import { beepShort, beepUnlimited, playPieceBeat, stopBeep } from "@/renderer/devices/audio.js";
@@ -155,9 +153,6 @@ class Store {
   private onUpdateRecordTreeHandlers: UpdateTreeHandler[] = [];
   private onUpdateCustomDataHandlers: UpdateCustomDataHandler[] = [];
 
-  //@LoveKapibarasan
-  public recordRef = ref<ImmutableRecord>(this.recordManager.record);
-  //=====
   constructor() {
     const refs = reactive(this);
     this._reactive = refs;
@@ -166,10 +161,6 @@ class Store {
         this.onChangePositionHandlers.forEach((handler) => handler());
         saveRecordForWebApp(this.record);
         this.updateResearchPosition();
-        //@LoveKapibarasan
-        // record の参照を差し替えることで Vue に更新を伝える
-        this.recordRef.value = this.recordManager.record;
-        //=====
       })
       .on("updateTree", () => {
         this.onUpdateRecordTreeHandlers.forEach((handler) => handler());
@@ -466,14 +457,14 @@ class Store {
       this._appState = AppState.NORMAL;
     }
   }
-
+//@LoveKapibarasan
   closeModalDialog(): Promise<void> {
     if (!useBusyState().isBusy) {
       this.destroyModalDialog();
     }
     return Promise.resolve();
   }
-
+//=====
   get isAppSettingsDialogVisible(): boolean {
     return this._isAppSettingsDialogVisible;
   }
@@ -1048,9 +1039,7 @@ class Store {
         useErrorStore().add(e);
       })
       .finally(() => {
-        if (useBusyState().isBusy) {
           useBusyState().release();
-        }
       });
   }
 
