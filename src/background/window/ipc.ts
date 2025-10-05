@@ -1022,11 +1022,6 @@ export function openRecord(path: string): void {
     mainWindow.webContents.send(Renderer.OPEN_RECORD, path);
   }
 }
-//@LoveKapibarasan
-export function batchAnalysis(path: string, engineURI: string): void {
-  mainWindow.webContents.send(Renderer.BATCH_ANALYSIS, path, engineURI);
-}
-//=====
 export function sendProgress(progress: number): void {
   mainWindow.webContents.send(Renderer.PROGRESS, progress);
 }

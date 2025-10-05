@@ -145,14 +145,6 @@ const api: Bridge = {
   onOpenRecord(callback: (path: string) => void): void {
     ipcRenderer.on(Renderer.OPEN_RECORD, (_, path) => callback(path));
   },
-  //@LoveKapibarasan
-  onBatchAnalysis(callback: (path: string, engineURI: string) => void): void {
-    ipcRenderer.on(Renderer.BATCH_ANALYSIS, (_event, path, engineURI) => {
-      callback(path, engineURI);
-    });
-  },
-
-  //=====
 
   // Book
   async showOpenBookDialog(): Promise<string> {

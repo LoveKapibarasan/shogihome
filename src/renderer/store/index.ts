@@ -24,7 +24,7 @@ import {
   ImmutableNode,
   Record,
 } from "tsshogi";
-import { reactive, UnwrapNestedRef } from "vue";
+import { reactive, UnwrapNestedRefs } from "vue";
 import { GameSettings } from "@/common/settings/game.js";
 import { ClockSoundTarget, Tab, TextDecodingRule } from "@/common/settings/app.js";
 import { beepShort, beepUnlimited, playPieceBeat, stopBeep } from "@/renderer/devices/audio.js";

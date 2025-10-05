@@ -248,9 +248,6 @@ export const webAPI: Bridge = {
   onOpenRecord(): void {
     // Do Nothing
   },
-  onBatchAnalysis(): void {
-    // Do Nothing
-  },
 
   // Book
   async showOpenBookDialog(): Promise<string> {

@@ -97,9 +97,6 @@ export enum Renderer {
   MENU_EVENT = "menuEvent",
   UPDATE_APP_SETTINGS = "updateAppSettings",
   OPEN_RECORD = "openRecord",
-  //@LoveKapibarasan
-  BATCH_ANALYSIS = "batchAnalysis",
-  //=====
   USI_BEST_MOVE = "usiBestMove",
   USI_CHECKMATE = "usiCheckmate",
   USI_CHECKMATE_NOT_IMPLEMENTED = "usiCheckmateNotImplemented",

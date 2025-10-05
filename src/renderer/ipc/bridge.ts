@@ -54,9 +54,6 @@ export interface Bridge {
   showSelectSFENDialog(lastPath: string): Promise<string>;
   loadSFENFile(path: string): Promise<string[]>;
   onOpenRecord(callback: (path: string) => void): void;
-  //@LoveKapibarasan
-  onBatchAnalysis(callback: (path: string, engineURI: string) => void): void;
-  //=====
 
   // Book
   showOpenBookDialog(): Promise<string>;
