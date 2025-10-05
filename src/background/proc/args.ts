@@ -50,7 +50,9 @@ export function parseProcessArgs(args: string[]): ProcessArgs | Error {
         return new Error(`Invalid layout profile: ${nextArg}`);
       }
       i++;
-    } else if (arg === "--batch-analysis") {
+    }
+    //@LoveKapibarasan
+    else if (arg === "--batch-analysis") {
       console.log("Batch arg detected");
       // GUI モードでの追加オプション
       if (args.length < i + 3) {
@@ -58,7 +60,9 @@ export function parseProcessArgs(args: string[]): ProcessArgs | Error {
       }
       batchAnalysisDir = args[++i];
       batchAnalysisEngine = args[++i];
-    } else if (arg === "--add-engine") {
+    }
+    //=====
+    else if (arg === "--add-engine") {
       // エンジン追加
       const usage = "Usage: --add-engine <path> <name> <timeout> [<engine_options_base64>]";
       if (args.length < i + 4) {
@@ -92,5 +96,9 @@ export function parseProcessArgs(args: string[]): ProcessArgs | Error {
     path,
     ply,
     layoutProfile,
+    //@LoveKapibarasan
+    batchAnalysisDir,
+    batchAnalysisEngine,
+    //=====
   };
 }
