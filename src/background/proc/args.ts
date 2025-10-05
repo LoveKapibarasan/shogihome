@@ -92,7 +92,5 @@ export function parseProcessArgs(args: string[]): ProcessArgs | Error {
     path,
     ply,
     layoutProfile,
-    batchAnalysisDir,
-    batchAnalysisEngine,
   };
 }
