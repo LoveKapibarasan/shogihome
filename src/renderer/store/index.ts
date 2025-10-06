@@ -832,17 +832,16 @@ class Store {
     console.log("in doQuizMove", move, expectedMove, successCounter, record);
     try {
       playPieceBeat(appSettings.pieceVolume);
+      record.append(move, { ignoreValidation: true });
     } catch (e) {
       useErrorStore().add(e);
     }
     await new Promise((resolve) => setTimeout(resolve, 500));
     if (expectedMove && move.equals(expectedMove)) {
-      console.log("Correct Move", move);
       record.goForward();
       playPieceBeat(appSettings.pieceVolume);
       return ++successCounter;
     } else {
-      console.log("Wrong move", move)
       record.removeCurrentMove();
       return successCounter;
     }

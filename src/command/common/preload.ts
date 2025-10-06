@@ -161,9 +161,6 @@ const bridge: Bridge = {
   onOpenRecord(): void {
     // Do Nothing
   },
-  onBatchAnalysis(): void {
-    // Do Nothing
-  },
 
   // Book
   async showOpenBookDialog(): Promise<string> {
@@ -395,6 +392,11 @@ const bridge: Bridge = {
   onProgress(): void {
     // Do Nothing
   },
+  //@LoveKapibarasan
+  async listFiles(): Promise<string[]> {
+    throw new Error("This feature is not available on command line tool");
+  },
+  //=====
 };
 
 global.window = {

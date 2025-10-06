@@ -316,8 +316,8 @@ const insertToComment = () => {
 //@LoveKapibarasan
 const onMove = async (move: Move) => {
   const expectedMove =
-    record.moves[record.current.ply]?.move instanceof Move
-      ? (record.moves[record.current.ply].move as Move)
+    record.moves[record.current.ply + 1]?.move instanceof Move
+      ? (record.moves[record.current.ply + 1].move as Move)
       : null;
 
   if (!expectedMove) {
@@ -326,7 +326,7 @@ const onMove = async (move: Move) => {
   }
   successCounter.value = await store.doQuizMove(move, expectedMove, successCounter.value, record);
 };
-const goNextBookmark = () => {
+const goNextBookmark = async () => {
   const bookmarks = store.record.bookmarks;
   if (!bookmarks.length) return;
 
@@ -335,9 +335,16 @@ const goNextBookmark = () => {
   const next = bookmarks[idx + 1] ?? bookmarks[0];
 
   if (next) {
-    store.closePVPreviewDialog()
+    store.closePVPreviewDialog();
     store.jumpToBookmark(next);
-    store.showPVPreviewDialog()
+
+    const pvs = store.inCommentPVs;
+    if (pvs.length > 0) {
+      store.showPVPreviewDialog({
+        position: store.record.position,
+        pv: pvs[0],
+      });
+    }
   }
 };
 //=====

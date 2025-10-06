@@ -4,4 +4,6 @@ export type ProcessArgs = {
   path?: string;
   ply?: number;
   layoutProfile?: LayoutProfile;
+  batchAnalysisDir?: string;
+  batchAnalysisEngine?: string;
 };
