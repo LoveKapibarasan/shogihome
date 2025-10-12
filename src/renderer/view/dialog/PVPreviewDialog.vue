@@ -327,10 +327,12 @@ const onMove = async (move: Move) => {
       : null;
 
   if (!expectedMove) {
-    console.log("No expected Move")
     return;
   }
   successCounter.value = await store.doQuizMove(move, expectedMove, successCounter.value, record);
+  if (successCounter.value >= 3) {
+   showAnswer.value = true;
+  }
 };
 const goNextBookmark = async () => {
   const bookmarks = store.record.bookmarks;

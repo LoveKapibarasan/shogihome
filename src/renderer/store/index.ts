@@ -829,7 +829,6 @@ class Store {
     }
     */
     const appSettings = useAppSettings();
-    console.log("in doQuizMove", move, expectedMove, successCounter, record);
     try {
       playPieceBeat(appSettings.pieceVolume);
       record.append(move, { ignoreValidation: true });

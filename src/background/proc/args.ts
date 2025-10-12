@@ -55,8 +55,6 @@ export function parseProcessArgs(args: string[]): ProcessArgs | Error {
     }
     //@LoveKapibarasan
     else if (arg === "--batch-analysis") {
-      console.log("Batch arg detected");
-      // GUI モードでの追加オプション
       if (args.length < i + 3) {
         return new Error("Usage: --batch-analysis <dir> <engineURI>");
       }
