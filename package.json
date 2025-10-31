@@ -65,7 +65,7 @@
     "proper-lockfile": "^4.1.2",
     "semver": "^7.7.1",
     "splitpanes": "^4.0.3",
-    "tsshogi": "^2.1.0",
+    "tsshogi": "^2.2.0",
     "vue": "^3.4.34",
     "yaml": "^2.5.0"
   },
@@ -106,7 +106,7 @@
     "tsx": "^4.19.3",
     "typescript": "^5.5.4",
     "typescript-eslint": "^8.44.1",
-    "vite": "^7.1.7",
+    "vite": "^7.1.11",
     "vite-plugin-pwa": "^1.0.0",
     "vitest": "^3.1.1",
     "vue-tsc": "^3.0.8",
