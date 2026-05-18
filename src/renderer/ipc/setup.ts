@@ -348,6 +348,12 @@ export function setup(): void {
     const info = JSON.parse(json) as USIInfoCommand;
     onUSIInfo(sessionID, usi, info);
   });
+  bridge.onUSISpectate((usi: string) => {
+    store.beginSpectating(usi);
+  });
+  bridge.onUSISpectateGameover(() => {
+    store.endSpectating();
+  });
 
   // CSA
   bridge.onCSAGameSummary((sessionID: number, gameSummary: string): void => {

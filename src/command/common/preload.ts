@@ -273,6 +273,18 @@ const bridge: Bridge = {
   onUSIInfo(): void {
     // Do Nothing
   },
+  async getServerStatus(): Promise<null> {
+    return null;
+  },
+  async connectSpectator(): Promise<void> {
+    // Do Nothing
+  },
+  onUSISpectate(): void {
+    // Do Nothing
+  },
+  onUSISpectateGameover(): void {
+    // Do Nothing
+  },
 
   // CSA
   async csaLogin(json: string): Promise<number> {

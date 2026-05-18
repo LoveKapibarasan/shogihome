@@ -108,6 +108,8 @@ export interface API {
   usiStop(sessionID: number): Promise<void>;
   usiGameover(sessionID: number, result: GameResult): Promise<void>;
   usiQuit(sessionID: number): Promise<void>;
+  getServerStatus(): Promise<{ playing: boolean; usi: string | null } | null>;
+  connectSpectator(): Promise<void>;
 
   // CSA
   csaLogin(settings: CSAServerSettings): Promise<number>;
@@ -284,6 +286,13 @@ const api: API = {
   },
   usiPonderHit(sessionID, timeStates) {
     return bridge.usiPonderHit(sessionID, JSON.stringify(timeStates));
+  },
+
+  getServerStatus(): Promise<{ playing: boolean; usi: string | null } | null> {
+    return bridge.getServerStatus();
+  },
+  connectSpectator(): Promise<void> {
+    return bridge.connectSpectator();
   },
 
   // CSA

@@ -3,7 +3,8 @@ import { defaultAnalysisSettings } from "@/common/settings/analysis.js";
 import { defaultAppSettings } from "@/common/settings/app.js";
 import { defaultGameSettings } from "@/common/settings/game.js";
 import { defaultResearchSettings } from "@/common/settings/research.js";
-import { USIEngines } from "@/common/settings/usi.js";
+import { USIEngines, emptyUSIEngine, getPredefinedUSIEngineTag } from "@/common/settings/usi.js";
+import { GameResult } from "@/common/game/result.js";
 import { LogLevel } from "@/common/log.js";
 import { Bridge } from "@/renderer/ipc/bridge.js";
 import { t } from "@/common/i18n/index.js";
@@ -30,6 +31,46 @@ enum STORAGE_KEY {
 }
 
 const fileCache = new Map<string, ArrayBuffer>();
+
+// --- USI WebSocket proxy state ---
+const USI_PROXY_URL = "wss://ai.lovekapibarasan.org";
+
+let usiWS: WebSocket | null = null;
+let usiSessionCounter = 0;
+let usiCurrentSessionID = 0;
+let onUSIBestMoveCallback:
+  | ((sessionID: number, usi: string, move: string, ponder?: string) => void)
+  | null = null;
+let onUSISpectateCallback: ((usi: string) => void) | null = null;
+let onUSISpectateGameoverCallback: (() => void) | null = null;
+
+function connectUSIProxy(): Promise<WebSocket> {
+  if (usiWS && usiWS.readyState === WebSocket.OPEN) {
+    return Promise.resolve(usiWS);
+  }
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(USI_PROXY_URL);
+    ws.onopen = () => {
+      usiWS = ws;
+      resolve(ws);
+    };
+    ws.onerror = () => reject(new Error("USI proxy connection failed"));
+    ws.onclose = () => {
+      usiWS = null;
+    };
+    ws.onmessage = (ev) => {
+      const msg = JSON.parse(ev.data as string);
+      if (msg.type === "bestmove") {
+        onUSIBestMoveCallback?.(usiCurrentSessionID, msg.usi, msg.move, msg.ponder);
+      } else if (msg.type === "spectate" || msg.type === "move") {
+        onUSISpectateCallback?.(msg.usi);
+      } else if (msg.type === "gameover") {
+        onUSISpectateGameoverCallback?.();
+      }
+    };
+  });
+}
+// ---------------------------------
 
 // Electron を使わずにシンプルな Web アプリケーションとして実行した場合に使用します。
 export const webAPI: Bridge = {
@@ -152,7 +193,15 @@ export const webAPI: Bridge = {
     localStorage.setItem(STORAGE_KEY.MATE_SEARCH_SETTINGS, json);
   },
   async loadUSIEngines(): Promise<string> {
-    return new USIEngines().json;
+    const engine = emptyUSIEngine();
+    engine.uri = "es://usi-engine/server";
+    engine.name = "Server Engine";
+    engine.defaultName = "Server Engine";
+    engine.path = "server";
+    engine.tags = [getPredefinedUSIEngineTag("game")];
+    const engines = new USIEngines();
+    engines.addEngine(engine);
+    return engines.json;
   },
   async saveUSIEngines(): Promise<void> {
     // Do Nothing
@@ -302,22 +351,27 @@ export const webAPI: Bridge = {
     throw new Error(t.thisFeatureNotAvailableOnWebApp);
   },
   async getUSIEngineMetadata(): Promise<string> {
-    throw new Error(t.thisFeatureNotAvailableOnWebApp);
+    return JSON.stringify({ isShellScript: false });
   },
   async sendUSIOptionButtonSignal(): Promise<void> {
     // Do Nothing
   },
   async usiLaunch(): Promise<number> {
-    throw new Error(t.thisFeatureNotAvailableOnWebApp);
+    usiSessionCounter++;
+    usiCurrentSessionID = usiSessionCounter;
+    await connectUSIProxy();
+    return usiCurrentSessionID;
   },
   async usiReady(): Promise<void> {
-    // Do Nothing
+    const ws = await connectUSIProxy();
+    ws.send(JSON.stringify({ cmd: "ready" }));
   },
   async usiSetOption(): Promise<void> {
     // Do Nothing
   },
-  async usiGo(): Promise<void> {
-    // Do Nothing
+  async usiGo(sessionID: number, usi: string, timeStatesJSON: string): Promise<void> {
+    const ws = await connectUSIProxy();
+    ws.send(JSON.stringify({ cmd: "go", usi, timeStatesJSON }));
   },
   async usiGoPonder(): Promise<void> {
     // Do Nothing
@@ -332,16 +386,41 @@ export const webAPI: Bridge = {
     // Do Nothing
   },
   async usiStop(): Promise<void> {
-    // Do Nothing
+    usiWS?.send(JSON.stringify({ cmd: "stop" }));
   },
-  async usiGameover(): Promise<void> {
-    // Do Nothing
+  async usiGameover(sessionID: number, result: GameResult): Promise<void> {
+    usiWS?.send(JSON.stringify({ cmd: "gameover", result }));
   },
   async usiQuit(): Promise<void> {
-    // Do Nothing
+    if (usiWS) {
+      usiWS.send(JSON.stringify({ cmd: "quit" }));
+      usiWS.close();
+      usiWS = null;
+    }
   },
-  onUSIBestMove(): void {
-    // Do Nothing
+  onUSIBestMove(
+    callback: (sessionID: number, usi: string, usiMove: string, ponder?: string) => void,
+  ): void {
+    onUSIBestMoveCallback = callback;
+  },
+  async getServerStatus(): Promise<{ playing: boolean; usi: string | null } | null> {
+    try {
+      const httpUrl = USI_PROXY_URL.replace(/^wss:\/\//, "https://").replace(/^ws:\/\//, "http://");
+      const resp = await fetch(`${httpUrl}/status`);
+      if (!resp.ok) return null;
+      return resp.json() as Promise<{ playing: boolean; usi: string | null }>;
+    } catch {
+      return null;
+    }
+  },
+  async connectSpectator(): Promise<void> {
+    await connectUSIProxy();
+  },
+  onUSISpectate(callback: (usi: string) => void): void {
+    onUSISpectateCallback = callback;
+  },
+  onUSISpectateGameover(callback: () => void): void {
+    onUSISpectateGameoverCallback = callback;
   },
   onUSICheckmate(): void {
     // Do Nothing

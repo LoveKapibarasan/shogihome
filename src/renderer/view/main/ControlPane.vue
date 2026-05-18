@@ -29,6 +29,11 @@
           <Icon :icon="IconType.GAME" />
           <span :class="{ tooltip: compact }">{{ t.game }}</span>
         </button>
+        <!-- 観戦中 -->
+        <div v-show="store.appState === AppState.SPECTATING" class="control-item spectating">
+          <Icon :icon="IconType.GAME" />
+          <span :class="{ tooltip: compact }">観戦中</span>
+        </div>
         <!-- 対局中断 -->
         <button
           v-show="store.appState === AppState.GAME || store.appState === AppState.CSA_GAME"
@@ -403,6 +408,11 @@ const onRemoveCurrentMove = () => {
 }
 .control-item .icon + span {
   margin-left: 5px;
+}
+.spectating {
+  opacity: 0.7;
+  cursor: default;
+  color: var(--text-color, inherit);
 }
 .tooltip {
   display: none;

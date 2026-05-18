@@ -278,6 +278,18 @@ const api: Bridge = {
       callback(sessionID, usi, json);
     });
   },
+  async getServerStatus(): Promise<null> {
+    return null;
+  },
+  async connectSpectator(): Promise<void> {
+    // Do Nothing (Electron uses local engines)
+  },
+  onUSISpectate(): void {
+    // Do Nothing (Electron uses local engines)
+  },
+  onUSISpectateGameover(): void {
+    // Do Nothing (Electron uses local engines)
+  },
 
   // CSA
   async csaLogin(json: string): Promise<number> {

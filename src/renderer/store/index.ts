@@ -679,6 +679,17 @@ class Store {
           const playerBuilder = defaultPlayerBuilder({
             timeoutSeconds: appSettings.engineTimeoutSeconds,
           });
+          if (!isNative()) {
+            const status = await api.getServerStatus();
+            if (status?.playing) {
+              this._appState = AppState.SPECTATING;
+              if (status.usi) {
+                this.recordManager.importRecord(status.usi, { type: RecordFormatType.USI });
+              }
+              api.connectSpectator().catch(() => {});
+              return;
+            }
+          }
           this._appState = AppState.GAME;
           await this.gameManager.startLinear(settings, playerBuilder);
         }
@@ -1089,6 +1100,20 @@ class Store {
 
   private updateResearchPosition(): void {
     this.researchManager?.updatePosition(this.recordManager.record);
+  }
+
+  beginSpectating(usi: string): void {
+    if (this._appState !== AppState.NORMAL && this._appState !== AppState.SPECTATING) {
+      return;
+    }
+    this._appState = AppState.SPECTATING;
+    this.recordManager.importRecord(usi, { type: RecordFormatType.USI });
+  }
+
+  endSpectating(): void {
+    if (this._appState === AppState.SPECTATING) {
+      this._appState = AppState.NORMAL;
+    }
   }
 
   resetRecord(mode: "keepRootPosition" | "hirateSetup" = "keepRootPosition"): void {
