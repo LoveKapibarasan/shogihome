@@ -1,6 +1,6 @@
 {
   "name": "electron-shogi",
-  "version": "1.27.2",
+  "version": "1.27.3",
   "description": "Shogi Frontend Application",
   "author": "Kubo, Ryosuke",
   "license": "MIT",
@@ -67,10 +67,10 @@
     "proper-lockfile": "^4.1.2",
     "semver": "^7.7.4",
     "splitpanes": "^4.0.3",
-    "tsshogi": "^2.3.2",
-    "vue": "^3.5.31",
+    "tsshogi": "^2.3.3",
+    "vue": "^3.5.29",
     "ws": "^8.20.0",
-    "yaml": "^2.8.3"
+    "yaml": "^2.8.2"
   },
   "devDependencies": {
     "@types/archiver": "^7.0.0",
