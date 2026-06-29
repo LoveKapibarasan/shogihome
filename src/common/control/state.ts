@@ -24,6 +24,7 @@ export enum AppState {
   RESET_BOOK_DIALOG = "resetBookDialog",
   SEARCH_DUPLICATE_POSITIONS_DIALOG = "searchDuplicatePositionsDialog",
   ELAPSED_TIME_CHART_DIALOG = "elapsedTimeChartDialog",
+  SPECTATING = "spectating",
 }
 
 export enum ResearchState {

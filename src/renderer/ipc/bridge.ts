@@ -96,6 +96,10 @@ export interface Bridge {
   onUSICheckmateTimeout(callback: (sessionID: number, usi: string) => void): void;
   onUSINoMate(callback: (sessionID: number, usi: string) => void): void;
   onUSIInfo(callback: (sessionID: number, usi: string, json: string) => void): void;
+  getServerStatus(): Promise<{ playing: boolean; usi: string | null } | null>;
+  connectSpectator(): Promise<void>;
+  onUSISpectate(callback: (usi: string) => void): void;
+  onUSISpectateGameover(callback: () => void): void;
 
   // CSA
   csaLogin(json: string): Promise<number>;

@@ -14,7 +14,7 @@
           <PlayerSelector
             v-model:player-uri="blackPlayerURI"
             :contains-human="!gameSettings.sprtEnabled"
-            :contains-basic-engines="true"
+            :contains-basic-engines="isNative()"
             :engines="engines"
             :default-tag="getPredefinedUSIEngineTag('game')"
             :display-ponder-state="true"
@@ -30,7 +30,7 @@
             v-if="whitePlayerURI"
             v-model:player-uri="whitePlayerURI"
             :contains-human="!gameSettings.sprtEnabled"
-            :contains-basic-engines="true"
+            :contains-basic-engines="isNative()"
             :engines="engines"
             :default-tag="getPredefinedUSIEngineTag('game')"
             :display-ponder-state="true"
